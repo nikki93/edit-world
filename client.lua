@@ -47,8 +47,12 @@ end
 --- CONNECT
 
 function client.connect()
-    do -- Walk
+    do -- Me
         home.me = castle.user.getMe()
+    end
+
+    do -- Selected
+        home.selected = {}
     end
 end
 
@@ -61,6 +65,49 @@ function client.draw()
     if client.connected then
         love.graphics.stacked('all', function() -- Camera transform
             love.graphics.translate(-cameraX, -cameraY)
+
+            do -- Nodes
+                local order = {}
+
+                for id, node in pairs(share.nodes) do -- Share, skipping selected
+                    if not home.selected[id] then
+                        table.insert(order, node)
+                    end
+                end
+
+                for id, node in pairs(home.selected) do -- Selected
+                    table.insert(order, node)
+                end
+
+                table.sort(order, function(node1, node2)
+                    if node1.depth < node2.depth then
+                        return true
+                    end
+                    if node1.depth > node2.depth then
+                        return false
+                    end
+                    return node1.id < node2.id
+                end)
+
+                for _, node in ipairs(order) do
+                    if node.type == 'image' then
+                        local image = imageFromUrl(node.imageUrl)
+                        if image then
+                            local width = node.width
+                            local height = node.height
+                            if height == 'auto' then
+                                height = (image:getHeight() / image:getWidth()) * width
+                            end
+                            love.graphics.draw(image, node.x, node.y, node.rotation, width / image:getWidth(), height / image:getHeight())
+
+                            love.graphics.stacked('all', function()
+                                love.graphics.setColor(1, 0, 0)
+                                love.graphics.circle('fill', node.x, node.y, 4)
+                            end)
+                        end
+                    end
+                end
+            end
 
             do -- Players
                 for clientId, player in pairs(share.players) do
@@ -137,4 +184,45 @@ function client.keypressed(key)
 end
 
 function client.keyreleased(key)
+end
+
+
+--- UI
+
+local ui = castle.ui
+
+function client.uiupdate()
+    if client.connected then
+        if ui.button('new node') then
+            home.selected = {}
+            local id = uuid()
+            home.selected[id] = {
+                id = id,
+                type = 'image',
+                x = cameraX + 0.5 * love.graphics.getWidth(),
+                y = cameraY + 0.5 * love.graphics.getHeight(),
+                rotation = 0,
+                depth = 1,
+                imageUrl = 'https://castle.games/static/logo.png',
+                width = 4 * G,
+                height = 'auto',
+            }
+        end
+
+        ui.markdown('----')
+
+        for id, node in pairs(home.selected) do
+            node.type = ui.dropdown('type', node.type, { 'image', 'text' })
+            node.x = ui.numberInput('x', node.x)
+            node.y = ui.numberInput('y', node.y)
+            node.rotation = ui.numberInput('rotation', node.rotation)
+            node.depth = ui.numberInput('depth', node.depth)
+
+            if node.type == 'image' then
+                node.imageUrl = ui.textInput('url', node.imageUrl)
+
+                node.width = ui.numberInput('width', node.width)
+            end
+        end
+    end
 end

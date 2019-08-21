@@ -75,4 +75,15 @@ function server.update(dt)
             player.x, player.y = homes[clientId].x, homes[clientId].y
         end
     end
+
+    do -- Selecteds
+        for clientId in pairs(share.players) do
+            local selected = homes[clientId].selected
+            if selected then
+                for id, node in pairs(selected) do
+                    share.nodes[id] = node
+                end
+            end
+        end
+    end
 end
