@@ -1,0 +1,7 @@
+---
+main: main_castle.lua
+title: Edit World
+description: Edit the world!!!1
+owner: nikki
+multiplayer:
+    - enabled: true
