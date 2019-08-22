@@ -286,86 +286,104 @@ end
 
 function client.uiupdate()
     if client.connected then
-        if ui.button('new node') then
-            local id = uuid()
-            home.selected = {
-                [id] = {
-                    id = id,
-                    type = 'image',
-                    x = cameraX + 0.5 * love.graphics.getWidth(),
-                    y = cameraY + 0.5 * love.graphics.getHeight(),
-                    rotation = 0,
-                    depth = 1,
-                    imageUrl = 'https://castle.games/static/logo.png',
-                    width = 4 * G,
-                    height = 4 * G,
-                    crop = false,
-                    cropX = 0,
-                    cropY = 0,
-                    cropWidth = 32,
-                    cropHeight = 32,
-                },
-            }
-        end
+        ui.tabs('main', function()
+            ui.tab('nodes', function()
+                if ui.button('new node') then
+                    local id = uuid()
+                    home.selected = {
+                        [id] = {
+                            id = id,
+                            type = 'image',
+                            x = cameraX + 0.5 * love.graphics.getWidth(),
+                            y = cameraY + 0.5 * love.graphics.getHeight(),
+                            rotation = 0,
+                            depth = 1,
+                            imageUrl = 'https://castle.games/static/logo.png',
+                            width = 4 * G,
+                            height = 4 * G,
+                            crop = false,
+                            cropX = 0,
+                            cropY = 0,
+                            cropWidth = 32,
+                            cropHeight = 32,
+                        },
+                    }
+                end
 
-        for id, node in pairs(home.selected) do
-            ui.section('selected node', { defaultOpen = true }, function()
-                node.type = ui.dropdown('type', node.type, { 'image', 'text' })
+                for id, node in pairs(home.selected) do
+                    ui.section('selected node', { defaultOpen = true }, function()
+                        node.type = ui.dropdown('type', node.type, { 'image', 'text' })
 
-                uiRow('position', function()
-                    node.x = ui.numberInput('x', node.x)
-                end, function()
-                    node.y = ui.numberInput('y', node.y)
-                end)
-
-                uiRow('rotation-depth', function()
-                    node.rotation = ui.numberInput('rotation', node.rotation)
-                end, function()
-                    node.depth = ui.numberInput('depth', node.depth)
-                end)
-
-                uiRow('size', function()
-                    node.width = ui.numberInput('width', node.width)
-                end, function()
-                    node.height = ui.numberInput('height', node.height)
-                end)
-
-                if node.type == 'image' then
-                    node.imageUrl = ui.textInput('image url', node.imageUrl)
-
-                    node.crop = ui.toggle('crop off', 'crop on', node.crop)
-
-                    if node.crop then
-                        uiRow('crop-xy', function()
-                            node.cropX = ui.numberInput('crop x', node.cropX)
+                        uiRow('position', function()
+                            node.x = ui.numberInput('x', node.x)
                         end, function()
-                            node.cropY = ui.numberInput('crop y', node.cropY)
-                        end)
-                        uiRow('crop-size', function()
-                            node.cropWidth = ui.numberInput('crop width', node.cropWidth)
-                        end, function()
-                            node.cropHeight = ui.numberInput('crop height', node.cropHeight)
+                            node.y = ui.numberInput('y', node.y)
                         end)
 
-                        if ui.button('reset crop') then
-                            local image = imageFromUrl(node.imageUrl)
-                            if image then
-                                node.cropX, node.cropY = 0, 0
-                                node.cropWidth, node.cropHeight = image:getWidth(), image:getHeight()
+                        uiRow('rotation-depth', function()
+                            node.rotation = ui.numberInput('rotation', node.rotation)
+                        end, function()
+                            node.depth = ui.numberInput('depth', node.depth)
+                        end)
+
+                        uiRow('size', function()
+                            node.width = ui.numberInput('width', node.width)
+                        end, function()
+                            node.height = ui.numberInput('height', node.height)
+                        end)
+
+                        if node.type == 'image' then
+                            node.imageUrl = ui.textInput('image url', node.imageUrl)
+
+                            node.crop = ui.toggle('crop off', 'crop on', node.crop)
+
+                            if node.crop then
+                                uiRow('crop-xy', function()
+                                    node.cropX = ui.numberInput('crop x', node.cropX)
+                                end, function()
+                                    node.cropY = ui.numberInput('crop y', node.cropY)
+                                end)
+                                uiRow('crop-size', function()
+                                    node.cropWidth = ui.numberInput('crop width', node.cropWidth)
+                                end, function()
+                                    node.cropHeight = ui.numberInput('crop height', node.cropHeight)
+                                end)
+
+                                if ui.button('reset crop') then
+                                    local image = imageFromUrl(node.imageUrl)
+                                    if image then
+                                        node.cropX, node.cropY = 0, 0
+                                        node.cropWidth, node.cropHeight = image:getWidth(), image:getHeight()
+                                    end
+                                end
                             end
                         end
-                    end
+                    end)
                 end
             end)
-        end
 
-        ui.section('general', function()
-            local bgc = share.backgroundColor
-            ui.colorPicker('background color', bgc.r, bgc.g, bgc.b, 1, {
-                onChange = function(c)
-                    client.send('setBackgroundColor', c)
-                end,
-            })
+            ui.tab('world', function()
+                local bgc = share.backgroundColor
+                ui.colorPicker('background color', bgc.r, bgc.g, bgc.b, 1, {
+                    onChange = function(c)
+                        client.send('setBackgroundColor', c)
+                    end,
+                })
+            end)
+
+            ui.tab('help', function()
+                ui.markdown([[
+in edit world you can walk around, explore nodes placed by other people, or place your own nodes!
+
+use the W, A, S and D keys to walk around.
+
+nodes can be images, and soon text and other types of nodes will be supported. 
+
+to place a node, in the 'nodes' tab, hit 'new node' and you will see an image appear in the center of your screen. you can change the url of the image, change its size or other properties in the sidebar.
+
+to select an existing node, just click it.
+                ]])
+            end)
         end)
     end
 end
