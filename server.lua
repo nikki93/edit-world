@@ -80,7 +80,10 @@ function server.update(dt)
 
     do -- Player motion
         for clientId, player in pairs(share.players) do
-            player.x, player.y = homes[clientId].x, homes[clientId].y
+            local homeX, homeY = homes[clientId].x, homes[clientId].y
+            if homeX and homeY then
+                player.x, player.y = homeX, homeY
+            end
         end
     end
 
