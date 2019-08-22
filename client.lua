@@ -18,6 +18,16 @@ local home = client.home
 
 --- UTIL
 
+local function depthLess(node1, node2)
+    if node1.depth < node2.depth then
+        return true
+    end
+    if node1.depth > node2.depth then
+        return false
+    end
+    return node1.id < node2.id
+end
+
 
 --- LOAD
 
@@ -86,15 +96,7 @@ function client.draw()
                         table.insert(order, node)
                     end
 
-                    table.sort(order, function(node1, node2)
-                        if node1.depth < node2.depth then
-                            return true
-                        end
-                        if node1.depth > node2.depth then
-                            return false
-                        end
-                        return node1.id < node2.id
-                    end)
+                    table.sort(order, depthLess)
                 end
 
                 for _, node in ipairs(order) do -- Draw order
@@ -134,6 +136,7 @@ function client.draw()
                 for clientId, player in pairs(share.players) do
                     local x, y = player.x, player.y
 
+                    -- Prefer home position
                     if clientId == client.id and home.x and home.y then
                         x, y = home.x, home.y
                     end
@@ -224,16 +227,32 @@ function client.mousepressed(x, y, button)
     local wx, wy = x + cameraX, y + cameraY
 
     if client.connected then
-        local hitId
-
-        for id, node in pairs(share.nodes) do
-            if node.x <= wx and node.y <= wy and node.x + node.width >= wx and node.y + node.height >= wy then
-                hitId = id
+        do -- Click to select
+            -- Collect hits
+            local hits = {}
+            for id, node in pairs(share.nodes) do
+                if node.x <= wx and node.y <= wy and node.x + node.width >= wx and node.y + node.height >= wy then
+                    table.insert(hits, node)
+                end
             end
-        end
+            table.sort(hits, depthLess)
 
-        if hitId then
-            home.selected = { [hitId] = share.nodes[hitId] }
+            -- Pick next in order if something is already selected, else pick first
+            local pick
+            for i = 1, #hits do
+                local j = i == #hits and 1 or i + 1
+                if home.selected[hits[i].id] and not home.selected[hits[j].id] then
+                    pick = hits[j]
+                end
+            end
+            pick = pick or hits[1]
+
+            -- Select it, or if nothing, just deselect all
+            if pick then
+                home.selected = { [pick.id] = pick }
+            else
+                home.selected = {}
+            end
         end
     end
 end
