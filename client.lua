@@ -185,6 +185,21 @@ function client.update(dt)
 
             home.x, home.y = home.x + vx * dt, home.y + vy * dt
         end
+
+        do -- Camera panning
+            if home.x < cameraX + CAMERA_GUTTER then
+                cameraX = home.x - CAMERA_GUTTER
+            end
+            if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
+                cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
+            end
+            if home.y < cameraY + CAMERA_GUTTER then
+                cameraY = home.y - CAMERA_GUTTER
+            end
+            if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
+                cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
+            end
+        end
     end
 end
 

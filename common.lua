@@ -10,6 +10,8 @@ G = 32              -- Grid unit size
 
 WALK_SPEED = 6 * G
 
+CAMERA_GUTTER = 120
+
 
 --- GRAPHICS UTILS
 
