@@ -295,6 +295,12 @@ function client.update(dt)
                 local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
                 local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
                 node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
+                while node.rotation > math.pi do
+                    node.rotation = node.rotation - 2 * math.pi
+                end
+                while node.rotation < -math.pi do
+                    node.rotation = node.rotation + 2 * math.pi
+                end
             end
         end
     end
