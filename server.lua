@@ -66,6 +66,12 @@ function server.receive(clientId, msg, ...)
     if msg == 'setBackgroundColor' then
         share.backgroundColor = ...
     end
+
+    if msg == 'postOpened' then
+        local post = ...
+        share.backgroundColor = post.data.backgroundColor
+        share.nodes = post.data.nodes
+    end
 end
 
 

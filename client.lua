@@ -72,6 +72,13 @@ function client.connect()
     do -- Deleted
         home.deleted = {}
     end
+
+    do -- Post opened
+        local post = castle.post.getInitialPost()
+        if post then
+            client.send('postOpened', post)
+        end
+    end
 end
 
 
@@ -481,6 +488,14 @@ for text, you can change the text that is displayed.
 with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
 
 similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
+
+### editing world properties
+
+in the 'world' tab you can edit world-level properties such as the background color.
+
+### saving the world
+
+in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can open that post to start a new session with the saved world.
                 ]])
             end)
 
@@ -605,6 +620,19 @@ similarly, **T** enters **resize mode** where you can use the mouse to change th
                         client.send('setBackgroundColor', c)
                     end,
                 })
+
+                if ui.button('post world!') then
+                    network.async(function()
+                        castle.post.create {
+                            message = 'A world we created!',
+                            media = 'capture',
+                            data = {
+                                backgroundColor = share.backgroundColor,
+                                nodes = cloneValue(share.nodes),
+                            },
+                        }
+                    end)
+                end
             end)
         end)
     end
