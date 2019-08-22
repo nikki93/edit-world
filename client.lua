@@ -213,6 +213,27 @@ function client.changing(diff)
 end
 
 
+--- MOUSE
+
+function client.mousepressed(x, y, button)
+    local wx, wy = x + cameraX, y + cameraY
+
+    if client.connected then
+        local hitId
+
+        for id, node in pairs(share.nodes) do
+            if node.x <= wx and node.y <= wy and node.x + node.width >= wx and node.y + node.height >= wy then
+                hitId = id
+            end
+        end
+
+        if hitId then
+            home.selected = { [hitId] = share.nodes[hitId] }
+        end
+    end
+end
+
+
 --- KEYBOARD
 
 function client.keypressed(key)
@@ -242,23 +263,24 @@ end
 function client.uiupdate()
     if client.connected then
         if ui.button('new node') then
-            home.selected = {}
             local id = uuid()
-            home.selected[id] = {
-                id = id,
-                type = 'image',
-                x = cameraX + 0.5 * love.graphics.getWidth(),
-                y = cameraY + 0.5 * love.graphics.getHeight(),
-                rotation = 0,
-                depth = 1,
-                imageUrl = 'https://castle.games/static/logo.png',
-                width = 4 * G,
-                height = 4 * G,
-                crop = false,
-                cropX = 0,
-                cropY = 0,
-                cropWidth = 32,
-                cropHeight = 32,
+            home.selected = {
+                [id] = {
+                    id = id,
+                    type = 'image',
+                    x = cameraX + 0.5 * love.graphics.getWidth(),
+                    y = cameraY + 0.5 * love.graphics.getHeight(),
+                    rotation = 0,
+                    depth = 1,
+                    imageUrl = 'https://castle.games/static/logo.png',
+                    width = 4 * G,
+                    height = 4 * G,
+                    crop = false,
+                    cropX = 0,
+                    cropY = 0,
+                    cropWidth = 32,
+                    cropHeight = 32,
+                },
             }
         end
 
