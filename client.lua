@@ -348,31 +348,36 @@ local function uiRow(id, ...)
     end)
 end
 
+local defaults = {
+    image = {
+        url = 'https://castle.games/static/logo.png',
+        smoothScaling = true,
+        crop = false,
+        cropX = 0,
+        cropY = 0,
+        cropWidth = 32,
+        cropHeight = 32,
+    },
+}
+
 function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
             ui.tab('nodes', function()
                 if ui.button('new node') then
                     local id = uuid()
+                    local typ = 'image'
                     home.selected = {
                         [id] = {
                             id = id,
-                            type = 'image',
+                            type = typ,
                             x = cameraX + 0.5 * love.graphics.getWidth(),
                             y = cameraY + 0.5 * love.graphics.getHeight(),
                             rotation = 0,
                             depth = 1,
                             width = 4 * G,
                             height = 4 * G,
-                            image = {
-                                url = 'https://castle.games/static/logo.png',
-                                smoothScaling = true,
-                                crop = false,
-                                cropX = 0,
-                                cropY = 0,
-                                cropWidth = 32,
-                                cropHeight = 32,
-                            },
+                            [typ] = defaults[typ],
                         },
                     }
                 end
