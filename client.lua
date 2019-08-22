@@ -75,28 +75,29 @@ function client.draw()
 
             do -- Nodes
                 local order = {}
+                do -- Collect order
+                    for id, node in pairs(share.nodes) do -- Share, skipping selected
+                        if not home.selected[id] then
+                            table.insert(order, node)
+                        end
+                    end
 
-                for id, node in pairs(share.nodes) do -- Share, skipping selected
-                    if not home.selected[id] then
+                    for id, node in pairs(home.selected) do -- Selected
                         table.insert(order, node)
                     end
+
+                    table.sort(order, function(node1, node2)
+                        if node1.depth < node2.depth then
+                            return true
+                        end
+                        if node1.depth > node2.depth then
+                            return false
+                        end
+                        return node1.id < node2.id
+                    end)
                 end
 
-                for id, node in pairs(home.selected) do -- Selected
-                    table.insert(order, node)
-                end
-
-                table.sort(order, function(node1, node2)
-                    if node1.depth < node2.depth then
-                        return true
-                    end
-                    if node1.depth > node2.depth then
-                        return false
-                    end
-                    return node1.id < node2.id
-                end)
-
-                for _, node in ipairs(order) do
+                for _, node in ipairs(order) do -- Draw order
                     if node.type == 'image' then
                         local image = imageFromUrl(node.imageUrl)
                         if image then
@@ -117,7 +118,7 @@ function client.draw()
                     end
                 end
 
-                love.graphics.stacked('all', function()
+                love.graphics.stacked('all', function() -- Draw selection overlays
                     love.graphics.setColor(0, 1, 0)
                     for id, node in pairs(home.selected) do
                         love.graphics.stacked(function()
