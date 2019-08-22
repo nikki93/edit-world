@@ -93,6 +93,19 @@ do
     end
 end
 
+local fontWithSize
+do
+    local cache = {}
+    function fontWithSize(size)
+        local cached = cache[size]
+        if not cached then
+            cached = love.graphics.newFont(size)
+            cache[size] = cached
+        end
+        return cached
+    end
+end
+
 function client.draw()
     if client.connected then
         do -- Background color
@@ -156,6 +169,7 @@ function client.draw()
                             local c = node.text.color
                             love.graphics.setColor(c.r, c.g, c.b, c.a)
 
+                            love.graphics.setFont(fontWithSize(node.text.fontSize))
                             love.graphics.printf(node.text.text, 0, 0, node.width)
                         end)
                     end
@@ -432,6 +446,7 @@ local defaults = {
     },
     text = {
         text = 'type some\ntext here!',
+        fontSize = 14,
         color = { r = 0, g = 0, b = 0, a = 1 },
     }
 }
@@ -573,6 +588,9 @@ similarly, **T** enters **resize mode** where you can use the mouse to change th
 
                     if node.type == 'text' then
                         node.text.text = ui.textArea('text', node.text.text)
+
+                        node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
+                        node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
 
                         local c = node.text.color
                         c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
