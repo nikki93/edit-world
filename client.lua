@@ -28,6 +28,21 @@ local function depthLess(node1, node2)
     return node1.id < node2.id
 end
 
+local function cloneValue(t)
+    local typ = type(t)
+    if typ == 'nil' or typ == 'boolean' or typ == 'number' or typ == 'string' then
+        return t
+    elseif typ == 'table' or typ == 'userdata' then
+        local u = {}
+        for k, v in pairs(t) do
+            u[cloneValue(k)] = cloneValue(v)
+        end
+        return u
+    else
+        error('clone: bad type')
+    end
+end
+
 
 --- LOAD
 
@@ -52,6 +67,10 @@ function client.connect()
 
     do -- Selected
         home.selected = {}
+    end
+
+    do -- Deleted
+        home.deleted = {}
     end
 end
 
@@ -242,6 +261,14 @@ function client.update(dt)
             end
         end
 
+        do -- Clear deleteds
+            for id in pairs(home.deleted) do
+                if not share.nodes[id] then
+                    home.deleted[id] = nil
+                end
+            end
+        end
+
         if mode == 'grab' then -- Grab
             local dx, dy = mouseWX - prevMouseWX, mouseWY - prevMouseWY
             for id, node in pairs(home.selected) do
@@ -257,6 +284,17 @@ function client.update(dt)
                 local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
                 local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
                 node.width, node.height = math.max(G, node.width * lx / math.max(G, prevLX)), math.max(G, node.height * ly / math.max(G, prevLY))
+            end
+        end
+
+        if mode == 'rotate' then
+            for id, node in pairs(home.selected) do
+                theTransform:reset()
+                theTransform:translate(node.x, node.y)
+                theTransform:rotate(node.rotation)
+                local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
+                node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
             end
         end
     end
@@ -319,6 +357,10 @@ function client.mousepressed(x, y, button)
         if mode == 'resize' then -- Exit resize
             mode = 'none'
         end
+
+        if mode == 'rotate' then -- Exit rotate
+            mode = 'none'
+        end
     end
 end
 
@@ -339,6 +381,14 @@ function client.keypressed(key)
             mode = 'none'
         else
             mode = 'resize'
+        end
+    end
+
+    if key == 'r' then
+        if mode == 'rotate' then
+            mode = 'none'
+        else
+            mode = 'rotate'
         end
     end
 end
@@ -383,8 +433,38 @@ local defaults = {
 function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
+            ui.tab('help', function()
+                ui.markdown([[
+in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes!
+
+### moving
+
+use the W, A, S and D keys to walk around.
+
+### placing nodes
+
+to place a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
+
+use the **'type' dropdown** to switch to a different type of node (such as text).
+
+### editing nodes
+
+to **select** an existing node, just **click** it. when you make a new node, it is already selected. you can change its **properties** in the 'nodes' tab in the sidebar.
+
+for **images**, you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
+
+for text, you can change the text that is displayed.
+
+### moving nodes
+
+with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
+
+similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
+                ]])
+            end)
+
             ui.tab('nodes', function()
-                if ui.button('new node') then
+                if ui.button('new') then
                     local id = uuid()
                     local typ = 'image'
                     home.selected = {
@@ -402,74 +482,93 @@ function client.uiupdate()
                     }
                 end
 
+                ui.markdown('---')
+
                 for id, node in pairs(home.selected) do
-                    ui.section('selected node', { defaultOpen = true }, function()
-                        ui.dropdown('type', node.type, { 'image', 'text' }, {
-                            onChange = function(newType)
-                                node[node.type] = nil
-                                node.type = newType
-                                node[node.type] = defaults[node.type]
-                            end,
+                    uiRow('delete-clone', function()
+                        if ui.button('delete', { kind = 'danger' }) then
+                            home.deleted[node.id] = true
+                            home.selected[node.id] = nil
+                        end
+                    end, function()
+                        if ui.button('clone') then
+                            local newId = uuid()
+                            local newNode = cloneValue(node)
+                            newNode.id = newId
+                            newNode.x, newNode.y = newNode.x + G, newNode.y + G
+                            home.selected = { [newId] = newNode }
+                        end
+                    end)
+
+                    ui.markdown('---')
+
+                    ui.dropdown('type', node.type, { 'image', 'text' }, {
+                        onChange = function(newType)
+                            node[node.type] = nil
+                            node.type = newType
+                            node[node.type] = defaults[node.type]
+                        end,
+                    })
+
+                    uiRow('position', function()
+                        node.x = ui.numberInput('x', node.x)
+                    end, function()
+                        node.y = ui.numberInput('y', node.y)
+                    end)
+
+                    uiRow('rotation-depth', function()
+                        ui.numberInput('rotation', node.rotation * 180 / math.pi, {
+                            onChange = function (newVal)
+                                node.rotation = newVal * math.pi / 180
+                            end
                         })
+                    end, function()
+                        node.depth = ui.numberInput('depth', node.depth)
+                    end)
 
-                        uiRow('position', function()
-                            node.x = ui.numberInput('x', node.x)
-                        end, function()
-                            node.y = ui.numberInput('y', node.y)
-                        end)
+                    uiRow('size', function()
+                        node.width = ui.numberInput('width', node.width)
+                    end, function()
+                        node.height = ui.numberInput('height', node.height)
+                    end)
 
-                        uiRow('rotation-depth', function()
-                            ui.numberInput('rotation', node.rotation * 180 / math.pi, {
-                                onChange = function (newVal)
-                                    node.rotation = newVal * math.pi / 180
-                                end
-                            })
-                        end, function()
-                            node.depth = ui.numberInput('depth', node.depth)
-                        end)
+                    ui.markdown('---')
 
-                        uiRow('size', function()
-                            node.width = ui.numberInput('width', node.width)
-                        end, function()
-                            node.height = ui.numberInput('height', node.height)
-                        end)
+                    if node.type == 'image' then
+                        node.image.url = ui.textInput('image url', node.image.url)
 
-                        if node.type == 'image' then
-                            node.image.url = ui.textInput('image url', node.image.url)
+                        node.image.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.image.smoothScaling)
 
-                            node.image.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.image.smoothScaling)
+                        node.image.crop = ui.toggle('crop off', 'crop on', node.image.crop)
 
-                            node.image.crop = ui.toggle('crop off', 'crop on', node.image.crop)
+                        if node.image.crop then
+                            uiRow('crop-xy', function()
+                                node.image.cropX = ui.numberInput('crop x', node.image.cropX)
+                            end, function()
+                                node.image.cropY = ui.numberInput('crop y', node.image.cropY)
+                            end)
+                            uiRow('crop-size', function()
+                                node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
+                            end, function()
+                                node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
+                            end)
 
-                            if node.image.crop then
-                                uiRow('crop-xy', function()
-                                    node.image.cropX = ui.numberInput('crop x', node.image.cropX)
-                                end, function()
-                                    node.image.cropY = ui.numberInput('crop y', node.image.cropY)
-                                end)
-                                uiRow('crop-size', function()
-                                    node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
-                                end, function()
-                                    node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
-                                end)
-
-                                if ui.button('reset crop') then
-                                    local image = imageFromUrl(node.image.url)
-                                    if image then
-                                        node.image.cropX, node.image.cropY = 0, 0
-                                        node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
-                                    end
+                            if ui.button('reset crop') then
+                                local image = imageFromUrl(node.image.url)
+                                if image then
+                                    node.image.cropX, node.image.cropY = 0, 0
+                                    node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
                                 end
                             end
                         end
+                    end
 
-                        if node.type == 'text' then
-                            node.text.text = ui.textArea('text', node.text.text)
+                    if node.type == 'text' then
+                        node.text.text = ui.textArea('text', node.text.text)
 
-                            local c = node.text.color
-                            c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
-                        end
-                    end)
+                        local c = node.text.color
+                        c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                    end
                 end
             end)
 
@@ -480,22 +579,6 @@ function client.uiupdate()
                         client.send('setBackgroundColor', c)
                     end,
                 })
-            end)
-
-            ui.tab('help', function()
-                ui.markdown([[
-in edit world you can walk around, explore nodes placed by other people, or place your own nodes!
-
-use the W, A, S and D keys to walk around.
-
-nodes can be images, and soon text and other types of nodes will be supported. 
-
-to place a node, in the 'nodes' tab, hit 'new node' and you will see an image appear in the center of your screen. you can change the url of the image, change its size or other properties in the sidebar.
-
-to select an existing node, just click it.
-
-press G to enter grab mode -- the node will move with your mouse cursor. press G again or click to exit grab mode. press T to enter resize mode, where the node's width and height will change as you move your mouse cursor. press T again or click to exit resize mode.
-                ]])
             end)
         end)
     end

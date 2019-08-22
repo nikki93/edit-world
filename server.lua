@@ -89,11 +89,13 @@ function server.update(dt)
 
     do -- Selecteds
         for clientId in pairs(share.players) do
-            local selected = homes[clientId].selected
-            if selected then
-                for id, node in pairs(selected) do
-                    share.nodes[id] = node
-                end
+            local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
+            for id, node in pairs(deleted) do
+                selected[id] = nil
+                share.nodes[id] = nil
+            end
+            for id, node in pairs(selected) do
+                share.nodes[id] = node
             end
         end
     end
