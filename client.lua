@@ -481,9 +481,8 @@ use the **'type' dropdown** to switch to a different type of node (such as text)
 
 to **select** an existing node, just **click** it. when you make a new node, it is already selected. you can change its **properties** in the 'nodes' tab in the sidebar.
 
-for **images**, you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
-
-for text, you can change the text that is displayed.
+- **images**: you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
+- **text**: you can change the **text** that is displayed, set its **font size** and **color**.
 
 ### moving nodes
 
@@ -497,7 +496,7 @@ in the **'world' tab** you can edit **world-level** properties such as the **bac
 
 ### saving the world
 
-in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can open that post to start a new session with the saved world.
+in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can **open that post** to start a **new session** with the saved world.
                 ]])
             end)
 
