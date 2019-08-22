@@ -127,6 +127,18 @@ function client.draw()
                             love.graphics.draw(image, theQuad, node.x, node.y, node.rotation, scale)
                         end
                     end
+
+                    if node.type == 'text' then
+                        love.graphics.stacked('all', function()
+                            love.graphics.translate(node.x, node.y)
+                            love.graphics.rotate(node.rotation)
+
+                            local c = node.text.color
+                            love.graphics.setColor(c.r, c.g, c.b, c.a)
+
+                            love.graphics.printf(node.text.text, 0, 0, node.width)
+                        end)
+                    end
                 end
 
                 love.graphics.stacked('all', function() -- Draw selection overlays
@@ -358,6 +370,10 @@ local defaults = {
         cropWidth = 32,
         cropHeight = 32,
     },
+    text = {
+        text = 'type some\ntext here!',
+        color = { r = 0, g = 0, b = 0, a = 1 },
+    }
 }
 
 function client.uiupdate()
@@ -384,7 +400,13 @@ function client.uiupdate()
 
                 for id, node in pairs(home.selected) do
                     ui.section('selected node', { defaultOpen = true }, function()
-                        node.type = ui.dropdown('type', node.type, { 'image', 'text' })
+                        ui.dropdown('type', node.type, { 'image', 'text' }, {
+                            onChange = function(newType)
+                                node[node.type] = nil
+                                node.type = newType
+                                node[node.type] = defaults[node.type]
+                            end,
+                        })
 
                         uiRow('position', function()
                             node.x = ui.numberInput('x', node.x)
@@ -431,6 +453,13 @@ function client.uiupdate()
                                     end
                                 end
                             end
+                        end
+
+                        if node.type == 'text' then
+                            node.text.text = ui.textArea('text', node.text.text)
+
+                            local c = node.text.color
+                            c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
                         end
                     end)
                 end
