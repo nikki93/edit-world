@@ -33,12 +33,13 @@ end
 
 local cameraX, cameraY
 
-local theQuad
+local theQuad, theTransform
 
 function client.load()
     cameraX, cameraY = -0.5 * love.graphics.getWidth(), -0.5 * love.graphics.getHeight()
 
     theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
+    theTransform = love.math.newTransform()
 end
 
 
@@ -148,6 +149,7 @@ function client.draw()
                             love.graphics.translate(node.x, node.y)
                             love.graphics.rotate(node.rotation)
                             love.graphics.rectangle('line', 0, 0, node.width, node.height)
+                            love.graphics.circle('fill', 0, 0, 4)
                         end)
                     end
                 end)
@@ -249,14 +251,12 @@ function client.update(dt)
 
         if mode == 'resize' then -- Resize
             for id, node in pairs(home.selected) do
-                local prevLX, prevLY = prevMouseWX - node.x, prevMouseWY - node.y
-                local lx, ly = mouseWX - node.x, mouseWY - node.y
-
-                if prevLX ~= 0 and prevLY ~= 0 then
-                    node.width, node.height = node.width * lx / prevLX, node.height * ly / prevLY
-                end
-
-                node.width, node.height = math.max(G, node.width), math.max(G, node.height)
+                theTransform:reset()
+                theTransform:translate(node.x, node.y)
+                theTransform:rotate(node.rotation)
+                local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
+                node.width, node.height = math.max(G, node.width * lx / math.max(G, prevLX)), math.max(G, node.height * ly / math.max(G, prevLY))
             end
         end
     end
@@ -284,7 +284,11 @@ function client.mousepressed(x, y, button)
             -- Collect hits
             local hits = {}
             for id, node in pairs(share.nodes) do
-                if node.x <= wx and node.y <= wy and node.x + node.width >= wx and node.y + node.height >= wy then
+                theTransform:reset()
+                theTransform:translate(node.x, node.y)
+                theTransform:rotate(node.rotation)
+                local lx, ly = theTransform:inverseTransformPoint(wx, wy)
+                if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
                     table.insert(hits, node)
                 end
             end
