@@ -537,9 +537,11 @@ similarly, **T** enters **resize mode** where you can use the mouse to change th
                     if node.type == 'image' then
                         node.image.url = ui.textInput('image url', node.image.url)
 
-                        node.image.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.image.smoothScaling)
-
-                        node.image.crop = ui.toggle('crop off', 'crop on', node.image.crop)
+                        uiRow('smooth-scaling-crop', function()
+                            node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)
+                        end, function()
+                            node.image.crop = ui.toggle('crop', 'crop', node.image.crop)
+                        end)
 
                         if node.image.crop then
                             uiRow('crop-xy', function()
