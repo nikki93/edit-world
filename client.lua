@@ -463,7 +463,9 @@ function client.uiupdate()
         ui.tabs('main', function()
             ui.tab('help', function()
                 ui.markdown([[
-in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes!
+## welcome
+
+in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes! **invite** friends through the 'Invite: ' link in the Castle bottom bar to collaborate.
 
 ### moving
 
@@ -491,7 +493,7 @@ similarly, **T** enters **resize mode** where you can use the mouse to change th
 
 ### editing world properties
 
-in the 'world' tab you can edit world-level properties such as the background color.
+in the **'world' tab** you can edit **world-level** properties such as the **background color**.
 
 ### saving the world
 
