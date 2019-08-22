@@ -101,21 +101,21 @@ function client.draw()
 
                 for _, node in ipairs(order) do -- Draw order
                     if node.type == 'image' then
-                        local image = imageFromUrl(node.imageUrl)
+                        local image = imageFromUrl(node.image.url)
                         if image then
                             -- Don't call `:setFilter` unnecessarily
                             local filter = image:getFilter()
-                            if node.smoothScaling and filter == 'nearest' then
+                            if node.image.smoothScaling and filter == 'nearest' then
                                 image:setFilter('linear')
                             end
-                            if not node.smoothScaling and filter == 'linear' then
+                            if not node.image.smoothScaling and filter == 'linear' then
                                 image:setFilter('nearest')
                             end
 
                             local iw, ih = image:getWidth(), image:getHeight()
 
-                            if node.crop then
-                                theQuad:setViewport(node.cropX, node.cropY, node.cropWidth, node.cropHeight, iw, ih)
+                            if node.image.crop then
+                                theQuad:setViewport(node.image.cropX, node.image.cropY, node.image.cropWidth, node.image.cropHeight, iw, ih)
                             else
                                 theQuad:setViewport(0, 0, iw, ih, iw, ih)
                             end
@@ -362,15 +362,17 @@ function client.uiupdate()
                             y = cameraY + 0.5 * love.graphics.getHeight(),
                             rotation = 0,
                             depth = 1,
-                            imageUrl = 'https://castle.games/static/logo.png',
                             width = 4 * G,
                             height = 4 * G,
-                            smoothScaling = true,
-                            crop = false,
-                            cropX = 0,
-                            cropY = 0,
-                            cropWidth = 32,
-                            cropHeight = 32,
+                            image = {
+                                url = 'https://castle.games/static/logo.png',
+                                smoothScaling = true,
+                                crop = false,
+                                cropX = 0,
+                                cropY = 0,
+                                cropWidth = 32,
+                                cropHeight = 32,
+                            },
                         },
                     }
                 end
@@ -398,29 +400,29 @@ function client.uiupdate()
                         end)
 
                         if node.type == 'image' then
-                            node.imageUrl = ui.textInput('image url', node.imageUrl)
+                            node.image.url = ui.textInput('image url', node.image.url)
 
-                            node.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.smoothScaling)
+                            node.image.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.image.smoothScaling)
 
-                            node.crop = ui.toggle('crop off', 'crop on', node.crop)
+                            node.image.crop = ui.toggle('crop off', 'crop on', node.image.crop)
 
-                            if node.crop then
+                            if node.image.crop then
                                 uiRow('crop-xy', function()
-                                    node.cropX = ui.numberInput('crop x', node.cropX)
+                                    node.image.cropX = ui.numberInput('crop x', node.image.cropX)
                                 end, function()
-                                    node.cropY = ui.numberInput('crop y', node.cropY)
+                                    node.image.cropY = ui.numberInput('crop y', node.image.cropY)
                                 end)
                                 uiRow('crop-size', function()
-                                    node.cropWidth = ui.numberInput('crop width', node.cropWidth)
+                                    node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
                                 end, function()
-                                    node.cropHeight = ui.numberInput('crop height', node.cropHeight)
+                                    node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
                                 end)
 
                                 if ui.button('reset crop') then
-                                    local image = imageFromUrl(node.imageUrl)
+                                    local image = imageFromUrl(node.image.url)
                                     if image then
-                                        node.cropX, node.cropY = 0, 0
-                                        node.cropWidth, node.cropHeight = image:getWidth(), image:getHeight()
+                                        node.image.cropX, node.image.cropY = 0, 0
+                                        node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
                                     end
                                 end
                             end
