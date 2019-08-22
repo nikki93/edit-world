@@ -168,36 +168,40 @@ function client.update(dt)
                 home.x, home.y = player.x, player.y
             end
 
-            local vx, vy = 0, 0
+            if home.x and home.y then
+                local vx, vy = 0, 0
 
-            if love.keyboard.isDown('a') then
-                vx = vx - WALK_SPEED
-            end
-            if love.keyboard.isDown('d') then
-                vx = vx + WALK_SPEED
-            end
-            if love.keyboard.isDown('w') then
-                vy = vy - WALK_SPEED
-            end
-            if love.keyboard.isDown('s') then
-                vy = vy + WALK_SPEED
-            end
+                if love.keyboard.isDown('a') then
+                    vx = vx - WALK_SPEED
+                end
+                if love.keyboard.isDown('d') then
+                    vx = vx + WALK_SPEED
+                end
+                if love.keyboard.isDown('w') then
+                    vy = vy - WALK_SPEED
+                end
+                if love.keyboard.isDown('s') then
+                    vy = vy + WALK_SPEED
+                end
 
-            home.x, home.y = home.x + vx * dt, home.y + vy * dt
+                home.x, home.y = home.x + vx * dt, home.y + vy * dt
+            end
         end
 
         do -- Camera panning
-            if home.x < cameraX + CAMERA_GUTTER then
-                cameraX = home.x - CAMERA_GUTTER
-            end
-            if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
-                cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
-            end
-            if home.y < cameraY + CAMERA_GUTTER then
-                cameraY = home.y - CAMERA_GUTTER
-            end
-            if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
-                cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
+            if home.x and home.y then
+                if home.x < cameraX + CAMERA_GUTTER then
+                    cameraX = home.x - CAMERA_GUTTER
+                end
+                if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
+                    cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
+                end
+                if home.y < cameraY + CAMERA_GUTTER then
+                    cameraY = home.y - CAMERA_GUTTER
+                end
+                if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
+                    cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
+                end
             end
         end
     end
