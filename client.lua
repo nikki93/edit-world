@@ -23,8 +23,12 @@ local home = client.home
 
 local cameraX, cameraY
 
+local theQuad
+
 function client.load()
     cameraX, cameraY = -0.5 * love.graphics.getWidth(), -0.5 * love.graphics.getHeight()
+
+    theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 end
 
 
@@ -59,30 +63,7 @@ do
     end
 end
 
-local resetQuadPool, getQuadFromPool
-do
-    local pool, i = {}, 1
-
-    function resetQuadPool()
-        i = 1
-    end
-
-    function getQuadFromPool(x, y, w, h, iw, ih)
-        local quad = pool[i]
-        if quad then
-            quad:setViewport(x, y, w, h, iw, ih)
-        else
-            quad = love.graphics.newQuad(x, y, w, h, iw, ih)
-            pool[i] = quad
-        end
-        i = i + 1
-        return quad
-    end
-end
-
 function client.draw()
-    resetQuadPool()
-
     if client.connected then
         do -- Background color
             local bgc = share.backgroundColor
@@ -121,19 +102,17 @@ function client.draw()
                         if image then
                             local iw, ih = image:getWidth(), image:getHeight()
 
-                            local quad
-
                             if node.crop then
-                                quad = getQuadFromPool(node.cropX, node.cropY, node.cropWidth, node.cropHeight, iw, ih)
+                                theQuad:setViewport(node.cropX, node.cropY, node.cropWidth, node.cropHeight, iw, ih)
                             else
-                                quad = getQuadFromPool(0, 0, iw, ih, iw, ih)
+                                theQuad:setViewport(0, 0, iw, ih, iw, ih)
                             end
 
-                            local qx, qy, qw, qh = quad:getViewport()
+                            local qx, qy, qw, qh = theQuad:getViewport()
 
                             local scale = math.min(node.width / qw, node.height / qh)
 
-                            love.graphics.draw(image, quad, node.x, node.y, node.rotation, scale)
+                            love.graphics.draw(image, theQuad, node.x, node.y, node.rotation, scale)
                         end
                     end
                 end
