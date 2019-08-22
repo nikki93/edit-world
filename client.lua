@@ -103,6 +103,15 @@ function client.draw()
                     if node.type == 'image' then
                         local image = imageFromUrl(node.imageUrl)
                         if image then
+                            -- Don't call `:setFilter` unnecessarily
+                            local filter = image:getFilter()
+                            if node.smoothScaling and filter == 'nearest' then
+                                image:setFilter('linear')
+                            end
+                            if not node.smoothScaling and filter == 'linear' then
+                                image:setFilter('nearest')
+                            end
+
                             local iw, ih = image:getWidth(), image:getHeight()
 
                             if node.crop then
@@ -356,6 +365,7 @@ function client.uiupdate()
                             imageUrl = 'https://castle.games/static/logo.png',
                             width = 4 * G,
                             height = 4 * G,
+                            smoothScaling = true,
                             crop = false,
                             cropX = 0,
                             cropY = 0,
@@ -389,6 +399,8 @@ function client.uiupdate()
 
                         if node.type == 'image' then
                             node.imageUrl = ui.textInput('image url', node.imageUrl)
+
+                            node.smoothScaling = ui.toggle('smooth scaling off', 'smooth scaling on', node.smoothScaling)
 
                             node.crop = ui.toggle('crop off', 'crop on', node.crop)
 
