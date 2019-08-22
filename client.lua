@@ -59,7 +59,30 @@ do
     end
 end
 
+local resetQuadPool, getQuadFromPool
+do
+    local pool, i = {}, 1
+
+    function resetQuadPool()
+        i = 1
+    end
+
+    function getQuadFromPool(x, y, w, h, iw, ih)
+        local quad = pool[i]
+        if quad then
+            quad:setViewport(x, y, w, h, iw, ih)
+        else
+            quad = love.graphics.newQuad(x, y, w, h, iw, ih)
+            pool[i] = quad
+        end
+        i = i + 1
+        return quad
+    end
+end
+
 function client.draw()
+    resetQuadPool()
+
     if client.connected then
         do -- Background color
             local bgc = share.backgroundColor
@@ -96,11 +119,35 @@ function client.draw()
                     if node.type == 'image' then
                         local image = imageFromUrl(node.imageUrl)
                         if image then
-                            local scale = math.min(node.width / image:getWidth(), node.height / image:getHeight())
-                            love.graphics.draw(image, node.x, node.y, node.rotation, scale)
+                            local iw, ih = image:getWidth(), image:getHeight()
+
+                            local quad
+
+                            if node.crop then
+                                quad = getQuadFromPool(node.cropX, node.cropY, node.cropWidth, node.cropHeight, iw, ih)
+                            else
+                                quad = getQuadFromPool(0, 0, iw, ih, iw, ih)
+                            end
+
+                            local qx, qy, qw, qh = quad:getViewport()
+
+                            local scale = math.min(node.width / qw, node.height / qh)
+
+                            love.graphics.draw(image, quad, node.x, node.y, node.rotation, scale)
                         end
                     end
                 end
+
+                love.graphics.stacked('all', function()
+                    love.graphics.setColor(0, 1, 0)
+                    for id, node in pairs(home.selected) do
+                        love.graphics.stacked(function()
+                            love.graphics.translate(node.x, node.y)
+                            love.graphics.rotate(node.rotation)
+                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
+                        end)
+                    end
+                end)
             end
 
             do -- Players
@@ -213,6 +260,11 @@ function client.uiupdate()
                 imageUrl = 'https://castle.games/static/logo.png',
                 width = 4 * G,
                 height = 4 * G,
+                crop = false,
+                cropX = 0,
+                cropY = 0,
+                cropWidth = 32,
+                cropHeight = 32,
             }
         end
 
@@ -240,6 +292,29 @@ function client.uiupdate()
 
                 if node.type == 'image' then
                     node.imageUrl = ui.textInput('image url', node.imageUrl)
+
+                    node.crop = ui.toggle('crop off', 'crop on', node.crop)
+
+                    if node.crop then
+                        uiRow('crop-xy', function()
+                            node.cropX = ui.numberInput('crop x', node.cropX)
+                        end, function()
+                            node.cropY = ui.numberInput('crop y', node.cropY)
+                        end)
+                        uiRow('crop-size', function()
+                            node.cropWidth = ui.numberInput('crop width', node.cropWidth)
+                        end, function()
+                            node.cropHeight = ui.numberInput('crop height', node.cropHeight)
+                        end)
+
+                        if ui.button('reset crop') then
+                            local image = imageFromUrl(node.imageUrl)
+                            if image then
+                                node.cropX, node.cropY = 0, 0
+                                node.cropWidth, node.cropHeight = image:getWidth(), image:getHeight()
+                            end
+                        end
+                    end
                 end
             end)
         end
