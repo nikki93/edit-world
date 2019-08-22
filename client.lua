@@ -18,22 +18,6 @@ local home = client.home
 
 --- UTIL
 
-local imageFromUrl
-do
-    local cache = {}
-    function imageFromUrl(url)
-        local cached = cache[url]
-        if not cached then
-            cached = {}
-            cache[url] = cached
-            network.async(function()
-                cached.image = love.graphics.newImage(url)
-            end)
-        end
-        return cached.image
-    end
-end
-
 
 --- LOAD
 
@@ -59,10 +43,29 @@ end
 
 --- DRAW
 
-function client.draw()
-    love.graphics.clear(1, 0.98, 0.98)
+local imageFromUrl
+do
+    local cache = {}
+    function imageFromUrl(url)
+        local cached = cache[url]
+        if not cached then
+            cached = {}
+            cache[url] = cached
+            network.async(function()
+                cached.image = love.graphics.newImage(url)
+            end)
+        end
+        return cached.image
+    end
+end
 
+function client.draw()
     if client.connected then
+        do -- Background color
+            local bgc = share.backgroundColor
+            love.graphics.clear(bgc.r, bgc.g, bgc.b)
+        end
+
         love.graphics.stacked('all', function() -- Camera transform
             love.graphics.translate(-cameraX, -cameraY)
 
@@ -93,17 +96,8 @@ function client.draw()
                     if node.type == 'image' then
                         local image = imageFromUrl(node.imageUrl)
                         if image then
-                            local width = node.width
-                            local height = node.height
-                            if height == 'auto' then
-                                height = (image:getHeight() / image:getWidth()) * width
-                            end
-                            love.graphics.draw(image, node.x, node.y, node.rotation, width / image:getWidth(), height / image:getHeight())
-
-                            love.graphics.stacked('all', function()
-                                love.graphics.setColor(1, 0, 0)
-                                love.graphics.circle('fill', node.x, node.y, 4)
-                            end)
+                            local scale = math.min(node.width / image:getWidth(), node.height / image:getHeight())
+                            love.graphics.draw(image, node.x, node.y, node.rotation, scale)
                         end
                     end
                 end
@@ -191,6 +185,19 @@ end
 
 local ui = castle.ui
 
+local function uiRow(id, ...)
+    local nArgs = select('#', ...)
+    local args = { ... }
+    ui.box(id, { flexDirection = 'row' }, function()
+        for i = 1, nArgs do
+            ui.box(tostring(i), { flex = 1 }, args[i])
+            if i < nArgs then
+                ui.box('space', { width = 20 }, function() end)
+            end
+        end
+    end)
+end
+
 function client.uiupdate()
     if client.connected then
         if ui.button('new node') then
@@ -205,24 +212,45 @@ function client.uiupdate()
                 depth = 1,
                 imageUrl = 'https://castle.games/static/logo.png',
                 width = 4 * G,
-                height = 'auto',
+                height = 4 * G,
             }
         end
 
-        ui.markdown('----')
-
         for id, node in pairs(home.selected) do
-            node.type = ui.dropdown('type', node.type, { 'image', 'text' })
-            node.x = ui.numberInput('x', node.x)
-            node.y = ui.numberInput('y', node.y)
-            node.rotation = ui.numberInput('rotation', node.rotation)
-            node.depth = ui.numberInput('depth', node.depth)
+            ui.section('selected node', { defaultOpen = true }, function()
+                node.type = ui.dropdown('type', node.type, { 'image', 'text' })
 
-            if node.type == 'image' then
-                node.imageUrl = ui.textInput('url', node.imageUrl)
+                uiRow('position', function()
+                    node.x = ui.numberInput('x', node.x)
+                end, function()
+                    node.y = ui.numberInput('y', node.y)
+                end)
 
-                node.width = ui.numberInput('width', node.width)
-            end
+                uiRow('rotation-depth', function()
+                    node.rotation = ui.numberInput('rotation', node.rotation)
+                end, function()
+                    node.depth = ui.numberInput('depth', node.depth)
+                end)
+
+                uiRow('size', function()
+                    node.width = ui.numberInput('width', node.width)
+                end, function()
+                    node.height = ui.numberInput('height', node.height)
+                end)
+
+                if node.type == 'image' then
+                    node.imageUrl = ui.textInput('image url', node.imageUrl)
+                end
+            end)
         end
+
+        ui.section('general', function()
+            local bgc = share.backgroundColor
+            ui.colorPicker('background color', bgc.r, bgc.g, bgc.b, 1, {
+                onChange = function(c)
+                    client.send('setBackgroundColor', c)
+                end,
+            })
+        end)
     end
 end

@@ -26,6 +26,10 @@ function server.load()
         share.players = {}
     end
 
+    do -- Background
+        share.backgroundColor = { r = 1, g = 0.98, b = 0.98 }
+    end
+
     do -- Nodes
         share.nodes = {}
     end
@@ -56,8 +60,12 @@ end
 
 --- RECEIVE
 
-function server.receive(clientId, msg)
+function server.receive(clientId, msg, ...)
     local player = share.players[clientId]
+
+    if msg == 'setBackgroundColor' then
+        share.backgroundColor = ...
+    end
 end
 
 
