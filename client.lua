@@ -415,7 +415,11 @@ function client.uiupdate()
                         end)
 
                         uiRow('rotation-depth', function()
-                            node.rotation = ui.numberInput('rotation', node.rotation)
+                            ui.numberInput('rotation', node.rotation * 180 / math.pi, {
+                                onChange = function (newVal)
+                                    node.rotation = newVal * math.pi / 180
+                                end
+                            })
                         end, function()
                             node.depth = ui.numberInput('depth', node.depth)
                         end)
