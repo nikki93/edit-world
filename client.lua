@@ -163,7 +163,17 @@ end
 
 --- UPDATE
 
+local mode = 'none'
+
+local prevMouseWX, prevMouseWY
+
 function client.update(dt)
+    local mouseX, mouseY = love.mouse.getPosition()
+    local mouseWX, mouseWY = mouseX + cameraX, mouseY + cameraY
+    if not (prevMouseWX and prevMouseWY) then
+        prevMouseWX, prevMouseWY = mouseWX, mouseWY
+    end
+
     if client.connected then
         do -- Player motion
             local player = share.players[client.id]
@@ -208,7 +218,29 @@ function client.update(dt)
                 end
             end
         end
+
+        if mode == 'grab' then -- Grab
+            local dx, dy = mouseWX - prevMouseWX, mouseWY - prevMouseWY
+            for id, node in pairs(home.selected) do
+                node.x, node.y = node.x + dx, node.y + dy
+            end
+        end
+
+        if mode == 'resize' then -- Resize
+            for id, node in pairs(home.selected) do
+                local prevLX, prevLY = prevMouseWX - node.x, prevMouseWY - node.y
+                local lx, ly = mouseWX - node.x, mouseWY - node.y
+
+                if prevLX ~= 0 and prevLY ~= 0 then
+                    node.width, node.height = node.width * lx / prevLX, node.height * ly / prevLY
+                end
+
+                node.width, node.height = math.max(G, node.width), math.max(G, node.height)
+            end
+        end
     end
+
+    prevMouseWX, prevMouseWY = mouseWX, mouseWY
 end
 
 
@@ -227,7 +259,7 @@ function client.mousepressed(x, y, button)
     local wx, wy = x + cameraX, y + cameraY
 
     if client.connected then
-        do -- Click to select
+        if mode == 'none' then -- Click to select
             -- Collect hits
             local hits = {}
             for id, node in pairs(share.nodes) do
@@ -254,6 +286,14 @@ function client.mousepressed(x, y, button)
                 home.selected = {}
             end
         end
+
+        if mode == 'grab' then -- Exit grab
+            mode = 'none'
+        end
+
+        if mode == 'resize' then -- Exit resize
+            mode = 'none'
+        end
     end
 end
 
@@ -261,6 +301,21 @@ end
 --- KEYBOARD
 
 function client.keypressed(key)
+    if key == 'g' then
+        if mode == 'grab' then
+            mode = 'none'
+        else
+            mode = 'grab'
+        end
+    end
+
+    if key == 't' then
+        if mode == 'resize' then
+            mode = 'none'
+        else
+            mode = 'resize'
+        end
+    end
 end
 
 function client.keyreleased(key)
@@ -382,6 +437,8 @@ nodes can be images, and soon text and other types of nodes will be supported.
 to place a node, in the 'nodes' tab, hit 'new node' and you will see an image appear in the center of your screen. you can change the url of the image, change its size or other properties in the sidebar.
 
 to select an existing node, just click it.
+
+press G to enter grab mode -- the node will move with your mouse cursor. press G again or click to exit grab mode. press T to enter resize mode, where the node's width and height will change as you move your mouse cursor. press T again or click to exit resize mode.
                 ]])
             end)
         end)
