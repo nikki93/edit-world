@@ -185,6 +185,8 @@ function client.update(dt)
                 end
 
                 home.x, home.y = home.x + vx * dt, home.y + vy * dt
+            else
+                print('nope')
             end
         end
 
