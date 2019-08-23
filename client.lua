@@ -295,6 +295,7 @@ function client.draw()
                         local font = fontFromUrl(node.text.fontUrl, node.text.fontSize)
                         if font then
                             love.graphics.setFont(font)
+                            local c = node.text.color
                             local transform = getWorldSpace(node).transform:clone():translate(-0.5 * node.width, -0.5 * node.height)
                             love.graphics.printf({ { c.r, c.g, c.b, c.a }, node.text.text }, transform, node.width)
                         end
