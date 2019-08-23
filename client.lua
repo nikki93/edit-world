@@ -397,7 +397,7 @@ function client.update(dt)
                             local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
                             if math.abs(lx) <= 0.5 * node.width and math.abs(ly) <= 0.5 * node.width then
                                 home.x, home.y = getWorldSpace(target).transform:transformPoint(0, 0)
-                                cameraX, cameraY = tx - 0.5 * love.graphics.getWidth(), ty - 0.5 * love.graphics.getHeight()
+                                cameraX, cameraY = home.x - 0.5 * love.graphics.getWidth(), home.y - 0.5 * love.graphics.getHeight()
                             end
                         end
                     end
@@ -789,15 +789,13 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                                 uiRow('child-' .. childId, function()
                                     ui.markdown(child.type)
                                 end, function()
-                                    uiRow('select-unlink', function()
-                                        if ui.button('select') then
-                                            home.selected = { [child.id] = child }
-                                        end
-                                    end, function()
-                                        if ui.button('unlink') then
-                                            removeFromGroup(node, child)
-                                        end
-                                    end)
+                                    if ui.button('pick') then
+                                        secondaryId = child.id
+                                    end
+                                end, function()
+                                    if ui.button('unlink') then
+                                        removeFromGroup(node, child)
+                                    end
                                 end)
                             end
                         end
