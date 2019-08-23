@@ -43,6 +43,32 @@ local function cloneValue(t)
     end
 end
 
+local function newNode()
+    local id = uuid()
+
+    home.selected = {}
+    home.selected[id] = NODE_COMMON_DEFAULTS
+    local newNode = home.selected[id]
+
+    newNode.id = id
+    newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
+    newNode.x, newNode.y = cameraX + 0.5 * love.graphics.getWidth(), cameraY + 0.5 * love.graphics.getHeight()
+end
+
+local function deleteNode(node)
+    home.deleted[node.id] = true
+    home.selected[node.id] = nil
+end
+
+local function cloneNode(node)
+    local newId = uuid()
+    local newNode = cloneValue(node)
+    newNode.id = newId
+    newNode.name = ''
+    newNode.x, newNode.y = newNode.x + G, newNode.y + G
+    home.selected = { [newId] = newNode }
+end
+
 
 --- LOAD
 
@@ -516,17 +542,35 @@ function client.keypressed(key)
         end
     end
 
-    if key == 'p' then -- Set parent
-        if secondaryId then
-            local secondary = share.nodes[secondaryId]
-            if secondary then
-                if secondary.type == 'group' then
-                    for id, node in pairs(home.selected) do
-                        addToGroup(node, secondary)
+    if love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift') then
+        if key == 'p' then -- Set parent
+            if secondaryId then
+                local secondary = share.nodes[secondaryId]
+                if secondary then
+                    if secondary.type == 'group' then
+                        for id, node in pairs(home.selected) do
+                            addToGroup(node, secondary)
+                        end
+                    else
+                        print('only groups can be parents!')
                     end
-                else
-                    print('only groups can be parents!')
                 end
+            end
+        end
+
+        if key == 'n' then -- New
+            newNode()
+        end
+
+        if key == 'backspace' or key == 'delete' then -- Delete
+            for id, node in pairs(home.selected) do
+                deleteNode(node)
+            end
+        end
+
+        if key == 'c' then -- Clone
+            for id, node in pairs(home.selected) do
+                cloneNode(node)
             end
         end
     end
@@ -607,15 +651,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
             ui.tab('nodes', function()
                 if ui.button('new') then
-                    local id = uuid()
-
-                    home.selected = {}
-                    home.selected[id] = NODE_COMMON_DEFAULTS
-                    local newNode = home.selected[id]
-
-                    newNode.id = id
-                    newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
-                    newNode.x, newNode.y = cameraX + 0.5 * love.graphics.getWidth(), cameraY + 0.5 * love.graphics.getHeight()
+                    newNode()
                 end
 
                 ui.markdown('---')
@@ -623,17 +659,11 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                 for id, node in pairs(home.selected) do
                     uiRow('delete-clone', function()
                         if ui.button('delete', { kind = 'danger' }) then
-                            home.deleted[node.id] = true
-                            home.selected[node.id] = nil
+                            deleteNode(node)
                         end
                     end, function()
                         if ui.button('clone') then
-                            local newId = uuid()
-                            local newNode = cloneValue(node)
-                            newNode.id = newId
-                            newNode.name = ''
-                            newNode.x, newNode.y = newNode.x + G, newNode.y + G
-                            home.selected = { [newId] = newNode }
+                            cloneNode(node)
                         end
                     end)
 
