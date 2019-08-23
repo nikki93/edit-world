@@ -18,6 +18,8 @@ local home = client.home
 
 --- UTIL
 
+local cameraX, cameraY
+
 local function depthLess(node1, node2)
     if node1.depth < node2.depth then
         return true
@@ -75,8 +77,6 @@ end
 
 
 --- LOAD
-
-local cameraX, cameraY
 
 local theQuad, theTransform
 
@@ -244,7 +244,7 @@ function client.draw()
                 end
 
                 love.graphics.stacked('all', function() -- Draw group overlays
-                    love.graphics.setColor(1, 1, 0)
+                    love.graphics.setColor(0.8, 0.5, 0.1)
                     for _, node in ipairs(groups) do
                         love.graphics.stacked(function()
                             love.graphics.translate(node.x, node.y)
@@ -458,22 +458,14 @@ function client.mousepressed(x, y, button)
                     return home.selected[id]
                 end
                 function select(node)
-                    if node then
-                        home.selected = { [node.id] = node }
-                    else
-                        home.selected = {}
-                    end
+                    home.selected = { [node.id] = node }
                 end
             elseif button == 2 then -- Secondary
                 function isSelected(id)
                     return secondaryId == id
                 end
                 function select(node)
-                    if node then
-                        secondaryId = node.id
-                    else
-                        secondaryId = nil
-                    end
+                    secondaryId = node.id
                 end
             end
 
@@ -501,7 +493,12 @@ function client.mousepressed(x, y, button)
             pick = pick or hits[1]
 
             -- Select it, or if nothing, just deselect all
-            select(pick)
+            if pick then
+                select(pick)
+            else
+                home.selected = {}
+                secondaryId = nil
+            end
         end
 
         if mode == 'grab' then -- Exit grab
@@ -552,7 +549,7 @@ function client.keypressed(key)
             if secondary then
                 if secondary.type == 'group' then
                     for id, node in pairs(home.selected) do
-                        addToGroup(node, secondary)
+                        addToGroup(secondary, node)
                     end
                 else
                     print('only groups can be parents!')
@@ -585,7 +582,7 @@ local ui = castle.ui
 local function uiRow(id, ...)
     local nArgs = select('#', ...)
     local args = { ... }
-    ui.box(id, { flexDirection = 'row' }, function()
+    ui.box(id, { flexDirection = 'row', alignItems = 'center' }, function()
         for i = 1, nArgs do
             ui.box(tostring(i), { flex = 1 }, args[i])
             if i < nArgs then
