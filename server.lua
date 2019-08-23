@@ -33,6 +33,10 @@ function server.load()
     do -- Nodes
         share.nodes = {}
     end
+
+    do -- Names
+        share.names = {}
+    end
 end
 
 
@@ -71,6 +75,12 @@ function server.receive(clientId, msg, ...)
         local post = ...
         share.backgroundColor = post.data.backgroundColor
         share.nodes = post.data.nodes
+        share.names = {}
+        for id, node in pairs(share.nodes) do
+            if node.name ~= '' then
+                share.names[node.name] = node.id
+            end
+        end
     end
 end
 
@@ -96,11 +106,27 @@ function server.update(dt)
     do -- Selecteds
         for clientId in pairs(share.players) do
             local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
-            for id, node in pairs(deleted) do
+            for id in pairs(deleted) do
                 selected[id] = nil
+
+                local node = share.nodes[id]
+                if node and node.name ~= '' then
+                    share.names[node.name] = nil
+                end
                 share.nodes[id] = nil
             end
             for id, node in pairs(selected) do
+                local currNode = share.nodes[id]
+                local currName = (currNode and currNode.name) or ''
+                if currName ~= node.name then
+                    if currName ~= '' then
+                        share.names[currName] = nil
+                    end
+                    if node.name ~= '' and not share.names[node.name] then
+                        share.names[node.name] = id
+                    end
+                end
+
                 share.nodes[id] = node
             end
         end

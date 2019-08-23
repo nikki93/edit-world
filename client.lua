@@ -139,7 +139,13 @@ function client.draw()
                     table.sort(order, depthLess)
                 end
 
+                local portals = {}
+
                 for _, node in ipairs(order) do -- Draw order
+                    if node.portalEnabled then
+                        table.insert(portals, node)
+                    end
+
                     if node.type == 'image' then
                         local image = imageFromUrl(node.image.url)
                         if image then
@@ -181,6 +187,17 @@ function client.draw()
                         end)
                     end
                 end
+
+                love.graphics.stacked('all', function() -- Draw portal overlays
+                    love.graphics.setColor(1, 0, 1)
+                    for _, node in ipairs(portals) do
+                        love.graphics.stacked(function()
+                            love.graphics.translate(node.x, node.y)
+                            love.graphics.rotate(node.rotation)
+                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
+                        end)
+                    end
+                end)
 
                 love.graphics.stacked('all', function() -- Draw selection overlays
                     love.graphics.setColor(0, 1, 0)
@@ -241,13 +258,14 @@ function client.update(dt)
         do -- Player motion
             local player = share.players[client.id]
 
-            if not (home.x and home.y) then
-                home.x, home.y = player.x, player.y
+            do -- Initialize
+                if not (home.x and home.y) then
+                    home.x, home.y = player.x, player.y
+                end
             end
 
-            if home.x and home.y then
+            do -- Walk
                 local vx, vy = 0, 0
-
                 if love.keyboard.isDown('a') then
                     vx = vx - WALK_SPEED
                 end
@@ -260,25 +278,46 @@ function client.update(dt)
                 if love.keyboard.isDown('s') then
                     vy = vy + WALK_SPEED
                 end
-
                 home.x, home.y = home.x + vx * dt, home.y + vy * dt
+            end
+
+            do -- Portals
+                local wx, wy = home.x + 0.5 * G, home.y + 0.5 * G
+
+                for id, node in pairs(share.nodes) do
+                    if node.portalEnabled then
+                        local targetId = share.names[node.portalTargetName]
+                        local target = targetId and share.nodes[targetId]
+                        if target then
+                            theTransform:reset()
+                            theTransform:translate(node.x, node.y)
+                            theTransform:rotate(node.rotation)
+                            local lx, ly = theTransform:inverseTransformPoint(wx, wy)
+                            if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
+                                theTransform:reset()
+                                theTransform:translate(target.x, target.y)
+                                theTransform:rotate(target.rotation)
+                                local tx, ty = theTransform:transformPoint(0.5 * target.width, 0.5 * target.height)
+                                home.x, home.y = tx - 0.5 * G, ty - 0.5 * G
+                            end
+                        end
+                    end
+                end
             end
         end
 
         do -- Camera panning
-            if home.x and home.y then
-                if home.x < cameraX + CAMERA_GUTTER then
-                    cameraX = home.x - CAMERA_GUTTER
-                end
-                if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
-                    cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
-                end
-                if home.y < cameraY + CAMERA_GUTTER then
-                    cameraY = home.y - CAMERA_GUTTER
-                end
-                if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
-                    cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
-                end
+            if home.x < cameraX + CAMERA_GUTTER then
+                cameraX = home.x - CAMERA_GUTTER
+            end
+            if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
+                cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
+            end
+            if home.y < cameraY + CAMERA_GUTTER then
+                cameraY = home.y - CAMERA_GUTTER
+            end
+            if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
+                cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
             end
         end
 
@@ -463,17 +502,15 @@ function client.uiupdate()
         ui.tabs('main', function()
             ui.tab('help', function()
                 ui.markdown([[
-## welcome
-
 in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes! **invite** friends through the 'Invite: ' link in the Castle bottom bar to collaborate.
 
 ### moving
 
 use the W, A, S and D keys to walk around.
 
-### placing nodes
+### creating nodes
 
-to place a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
+to create a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
 
 use the **'type' dropdown** to switch to a different type of node (such as text).
 
@@ -489,6 +526,16 @@ to **select** an existing node, just **click** it. when you make a new node, it 
 with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
 
 similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
+
+### names
+
+nodes can optionally have **names** so that they can be referenced from other nodes. a name is considered invalid if some other node is already using it.
+
+names are useful when making **portals** (see below).
+
+### portals
+
+any node can be turned into a **portal** by turning 'portal' on in its properties. you can then enter the name of a target node in 'portal target name'. then, when a player touches the portal, they will be **teleported** to the target!
 
 ### editing world properties
 
@@ -508,12 +555,15 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                         [id] = {
                             id = id,
                             type = typ,
+                            name = '',
                             x = cameraX + 0.5 * love.graphics.getWidth(),
                             y = cameraY + 0.5 * love.graphics.getHeight(),
                             rotation = 0,
                             depth = 1,
                             width = 4 * G,
                             height = 4 * G,
+                            portalEnabled = false,
+                            portalTargetName = '',
                             [typ] = defaults[typ],
                         },
                     }
@@ -532,6 +582,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                             local newId = uuid()
                             local newNode = cloneValue(node)
                             newNode.id = newId
+                            newNode.name = ''
                             newNode.x, newNode.y = newNode.x + G, newNode.y + G
                             home.selected = { [newId] = newNode }
                         end
@@ -545,6 +596,18 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                             node.type = newType
                             node[node.type] = defaults[node.type]
                         end,
+                    })
+
+                    local nameInvalid = false
+                    if node.name ~= '' then
+                        local usedId = share.names[node.name]
+                        if usedId and usedId ~= node.id then
+                            nameInvalid = true
+                        end
+                    end
+                    node.name = ui.textInput('name', node.name, {
+                        invalid = nameInvalid,
+                        invalidText = 'this name is in use by a different node',
                     })
 
                     uiRow('position', function()
@@ -568,6 +631,14 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                     end, function()
                         node.height = ui.numberInput('height', node.height)
                     end)
+
+                    node.portalEnabled = ui.toggle('portal', 'portal', node.portalEnabled)
+                    if node.portalEnabled then
+                        node.portalTargetName = ui.textInput('portal target name', node.portalTargetName, {
+                            invalid = share.names[node.portalTargetName] == nil,
+                            invalidText = node.portalTargetName == '' and 'portals need the name of a target node' or 'there is no node with this name'
+                        })
+                    end
 
                     ui.markdown('---')
 
