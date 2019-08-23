@@ -299,7 +299,7 @@ function client.update(dt)
                                 theTransform:rotate(target.rotation)
                                 local tx, ty = theTransform:transformPoint(0.5 * target.width, 0.5 * target.height)
                                 home.x, home.y = tx - 0.5 * G, ty - 0.5 * G
-                                cameraX, cameraY = tx - love.graphics.getWidth(), ty - love.graphics.getHeight()
+                                cameraX, cameraY = tx - 0.5 * love.graphics.getWidth(), ty - 0.5 * love.graphics.getHeight()
                             end
                         end
                     end
