@@ -20,7 +20,7 @@ local home = client.home
 
 local cameraX, cameraY
 
-local getWorldSpace, clearWorldSpace
+local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
     local cache = {}
 
@@ -28,6 +28,10 @@ do
         transform = love.math.newTransform(),
         depth = 0,
     }
+
+    function getParentWorldSpace(node)
+        return getWorldSpace(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]))
+    end
 
     function getWorldSpace(node)
         if node == nil then
@@ -38,9 +42,9 @@ do
                 cached = {}
                 cache[node] = cached
 
-                local parentSpace = getWorldSpace(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]))
-                cached.transform = parentSpace.transform:clone():translate(node.x, node.y):rotate(node.rotation)
-                cached.depth = parentSpace.depth + node.depth
+                local parentWorldSpace = getParentWorldSpace(node)
+                cached.transform = parentWorldSpace.transform:clone():translate(node.x, node.y):rotate(node.rotation)
+                cached.depth = parentWorldSpace.depth + node.depth
             end
             return cached
         end
@@ -429,9 +433,11 @@ function client.update(dt)
         end
 
         if mode == 'grab' then -- Grab
-            local dx, dy = mouseWX - prevMouseWX, mouseWY - prevMouseWY
             for id, node in pairs(home.selected) do
-                node.x, node.y = node.x + dx, node.y + dy
+                local transform = getParentWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
             end
         end
 
