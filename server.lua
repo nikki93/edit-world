@@ -26,8 +26,8 @@ function server.load()
         share.players = {}
     end
 
-    do -- Background
-        share.backgroundColor = { r = 1, g = 0.98, b = 0.98 }
+    do -- Settings
+        share.settings = SETTINGS_DEFAULTS
     end
 
     do -- Nodes
@@ -71,14 +71,19 @@ end
 function server.receive(clientId, msg, ...)
     local player = share.players[clientId]
 
-    if msg == 'setBackgroundColor' then
-        share.backgroundColor = ...
+    if msg == 'setSetting' then
+        local name, value = ...
+        share.settings[name] = value
     end
 
     if msg == 'postOpened' then
         local post = ...
 
-        share.backgroundColor = post.data.backgroundColor
+        share.settings = post.data.settings
+
+        if post.data.backgroundColor then -- Migrate old background color
+            share.settings.backgroundColor = post.data.backgroundColor
+        end
 
         share.nodes = post.data.nodes
 

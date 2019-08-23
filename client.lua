@@ -228,7 +228,7 @@ end
 function client.draw()
     if client.connected then
         do -- Background color
-            local bgc = share.backgroundColor
+            local bgc = share.settings.backgroundColor
             love.graphics.clear(bgc.r, bgc.g, bgc.b)
         end
 
@@ -381,6 +381,10 @@ function client.update(dt)
 
     if client.connected then
         clearWorldSpace()
+
+        do -- Defaults
+            NODE_TYPE_DEFAULTS.image.smoothScaling = share.settings.defaultSmoothScaling
+        end
 
         do -- Player motion
             local player = share.players[client.id]
@@ -746,19 +750,27 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                 for id, node in pairs(home.selected) do
                     local lock = share.locks[id]
                     if lock and lock ~= client.id then
-                        badLock = client.id
+                        badLock = lock
                         break
                     end
                 end
 
                 if badLock then
                     local lockMe = share.players[badLock] and share.players[badLock].me
-                    local lockUsername = (me and me.username) or 'unknown'
-                    local lockPhoto = me and me.photoUrl
+                    local lockUsername = (lockMe and lockMe.username) or 'unknown'
+                    local lockPhoto = lockMe and lockMe.photoUrl
+                    ui.markdown('🔒 locked by: ')
                     if lockPhoto then
-                        ui.markdown('locked by: ' .. lockUsername .. '\n![](' .. lockPhoto .. ')')
+                        ui.box('lock-username-photo', { flexDirection = 'row' }, function()
+                            ui.box('lock-photo', { maxWidth = 32 }, function()
+                                ui.image(lockPhoto)
+                            end)
+                            ui.box('lock-username', { flex = 1, marginLeft = 20 }, function()
+                                ui.markdown(lockUsername)
+                            end)
+                        end)
                     else
-                        ui.markdown('locked by: ' .. lockUsername)
+                        ui.markdown(lockUsername)
                     end
                 else
                     for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
@@ -897,12 +909,22 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
             end)
 
             ui.tab('world', function()
-                local bgc = share.backgroundColor
+                local bgc = share.settings.backgroundColor
                 ui.colorPicker('background color', bgc.r, bgc.g, bgc.b, 1, {
                     onChange = function(c)
-                        client.send('setBackgroundColor', c)
+                        client.send('setSetting', 'backgroundColor', c)
                     end,
                 })
+
+                ui.checkbox('smooth scale new images', share.settings.defaultSmoothScaling, {
+                    onChange = function(v)
+                        client.send('setSetting', 'defaultSmoothScaling', v)
+                    end
+                })
+
+                ui.box('spacer', { height = 40 }, function() end)
+
+                ui.markdown('---')
 
                 if ui.button('post world!') then
                     network.async(function()
@@ -910,7 +932,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                             message = 'A world we created!',
                             media = 'capture',
                             data = {
-                                backgroundColor = share.backgroundColor,
+                                settings = share.settings,
                                 nodes = cloneValue(share.nodes),
                             },
                         }
