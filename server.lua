@@ -73,11 +73,21 @@ function server.receive(clientId, msg, ...)
 
     if msg == 'postOpened' then
         local post = ...
+
         share.backgroundColor = post.data.backgroundColor
+
         share.nodes = post.data.nodes
+        for id, node in pairs(share.nodes) do
+            if node.portalEnabled == nil then
+                node.portalEnabled = false
+            end
+            if node.portalTargetName == nil then
+                node.portalTargetName = ''
+            end
+        end
+
         share.names = {}
         for id, node in pairs(share.nodes) do
-            node.name = node.name or ''
             if node.name ~= '' then
                 share.names[node.name] = node.id
             end
