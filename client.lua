@@ -18,7 +18,7 @@ local home = client.home
 
 --- UTIL
 
-local cameraX, cameraY
+local cameraX, cameraY = 0, 0
 local cameraW, cameraH = 800, 450
 local cameraSizes = {
     { },
@@ -428,17 +428,18 @@ function client.update(dt)
         end
 
         do -- Camera panning
-            if home.x - 0.5 * G < cameraX - 0.5 * cameraW + CAMERA_GUTTER then
-                cameraX = home.x - 0.5 * G + 0.5 * cameraW - CAMERA_GUTTER
+            local gutter = CAMERA_GUTTER * (cameraW / love.graphics.getWidth())
+            if home.x - 0.5 * G < cameraX - 0.5 * cameraW + gutter then
+                cameraX = home.x - 0.5 * G + 0.5 * cameraW - gutter
             end
-            if home.x + 0.5 * G > cameraX + 0.5 * cameraW - CAMERA_GUTTER then
-                cameraX = home.x + 0.5 * G - 0.5 * cameraW + CAMERA_GUTTER
+            if home.x + 0.5 * G > cameraX + 0.5 * cameraW - gutter then
+                cameraX = home.x + 0.5 * G - 0.5 * cameraW + gutter
             end
-            if home.y - 0.5 * G < cameraY - 0.5 * cameraH + CAMERA_GUTTER then
-                cameraY = home.y - 0.5 * G + 0.5 * cameraH - CAMERA_GUTTER
+            if home.y - 0.5 * G < cameraY - 0.5 * cameraH + gutter then
+                cameraY = home.y - 0.5 * G + 0.5 * cameraH - gutter
             end
-            if home.y + 0.5 * G > cameraY + 0.5 * cameraH - CAMERA_GUTTER then
-                cameraY = home.y + 0.5 * G - 0.5 * cameraH + CAMERA_GUTTER
+            if home.y + 0.5 * G > cameraY + 0.5 * cameraH - gutter then
+                cameraY = home.y + 0.5 * G - 0.5 * cameraH + gutter
             end
         end
 
@@ -750,8 +751,14 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                 end
 
                 if badLock then
-                    local lockedBy = share.mes[clientId] and share.mes[clientId].username or 'unknown'
-                    ui.markdown('locked by: ' .. lockedBy)
+                    local lockMe = share.players[clientId] and share.players[clientId].me
+                    local lockUsername = (me and me.username) or 'unknown'
+                    local lockPhoto = me and me.photoUrl
+                    if lockPhoto then
+                        ui.markdown('locked by: ' .. lockUsername .. '\n![](' .. lockPhoto .. ')')
+                    else
+                        ui.markdown('locked by: ' .. lockUsername)
+                    end
                 else
                     for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
                         uiRow('delete-clone', function()
