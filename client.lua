@@ -55,18 +55,22 @@ local function newNode()
     newNode.x, newNode.y = cameraX + 0.5 * love.graphics.getWidth(), cameraY + 0.5 * love.graphics.getHeight()
 end
 
-local function deleteNode(node)
-    home.deleted[node.id] = true
-    home.selected[node.id] = nil
+local function deleteSelectedNodes()
+    for id, node in pairs(home.selected) do
+        home.deleted[node.id] = true
+        home.selected[node.id] = nil
+    end
 end
 
-local function cloneNode(node)
-    local newId = uuid()
-    local newNode = cloneValue(node)
-    newNode.id = newId
-    newNode.name = ''
-    newNode.x, newNode.y = newNode.x + G, newNode.y + G
-    home.selected = { [newId] = newNode }
+local function cloneSelectedNodes(node)
+    for id, node in pairs(home.selected) do
+        local newId = uuid()
+        local newNode = cloneValue(node)
+        newNode.id = newId
+        newNode.name = ''
+        newNode.x, newNode.y = newNode.x + G, newNode.y + G
+        home.selected = { [newId] = newNode }
+    end
 end
 
 
@@ -542,37 +546,31 @@ function client.keypressed(key)
         end
     end
 
-    if love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift') then
-        if key == 'p' then -- Set parent
-            if secondaryId then
-                local secondary = share.nodes[secondaryId]
-                if secondary then
-                    if secondary.type == 'group' then
-                        for id, node in pairs(home.selected) do
-                            addToGroup(node, secondary)
-                        end
-                    else
-                        print('only groups can be parents!')
+    if key == 'p' then -- Set parent
+        if secondaryId then
+            local secondary = share.nodes[secondaryId]
+            if secondary then
+                if secondary.type == 'group' then
+                    for id, node in pairs(home.selected) do
+                        addToGroup(node, secondary)
                     end
+                else
+                    print('only groups can be parents!')
                 end
             end
         end
+    end
 
-        if key == 'n' then -- New
-            newNode()
-        end
+    if key == 'n' then -- New
+        newNode()
+    end
 
-        if key == 'backspace' or key == 'delete' then -- Delete
-            for id, node in pairs(home.selected) do
-                deleteNode(node)
-            end
-        end
+    if key == 'backspace' or key == 'delete' then -- Delete
+        deleteSelectedNodes()
+    end
 
-        if key == 'c' then -- Clone
-            for id, node in pairs(home.selected) do
-                cloneNode(node)
-            end
-        end
+    if key == 'c' then -- Clone
+        cloneSelectedNodes()
     end
 end
 
@@ -656,19 +654,19 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
                 ui.markdown('---')
 
+                uiRow('delete-clone', function()
+                    if ui.button('delete', { kind = 'danger' }) then
+                        deleteSelectedNodes()
+                    end
+                end, function()
+                    if ui.button('clone') then
+                        cloneSelectedNodes()
+                    end
+                end)
+
+                ui.markdown('---')
+
                 for id, node in pairs(home.selected) do
-                    uiRow('delete-clone', function()
-                        if ui.button('delete', { kind = 'danger' }) then
-                            deleteNode(node)
-                        end
-                    end, function()
-                        if ui.button('clone') then
-                            cloneNode(node)
-                        end
-                    end)
-
-                    ui.markdown('---')
-
                     ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
                         onChange = function(newType)
                             node[node.type] = nil
