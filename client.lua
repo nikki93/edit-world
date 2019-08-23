@@ -537,6 +537,8 @@ names are useful when making **portals** (see below).
 
 any node can be turned into a **portal** by turning 'portal' on in its properties. you can then enter the name of a target node in 'portal target name'. then, when a player touches the portal, they will be **teleported** to the target!
 
+portals always show a magenta rectangle around them.
+
 ### editing world properties
 
 in the **'world' tab** you can edit **world-level** properties such as the **background color**.
