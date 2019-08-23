@@ -19,6 +19,7 @@ local home = client.home
 --- UTIL
 
 local cameraX, cameraY
+local cameraW, cameraH = 800, 450
 
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
@@ -99,7 +100,7 @@ local function newNode()
 
     newNode.id = id
     newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
-    newNode.x, newNode.y = cameraX + 0.5 * love.graphics.getWidth(), cameraY + 0.5 * love.graphics.getHeight()
+    newNode.x, newNode.y = cameraX, cameraY
 end
 
 local function deleteSelectedNodes()
@@ -133,7 +134,7 @@ local secondaryId
 local defaultFont
 
 function client.load()
-    cameraX, cameraY = -0.5 * love.graphics.getWidth(), -0.5 * love.graphics.getHeight()
+    cameraX, cameraY = 0, 0
 
     theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 
@@ -223,7 +224,7 @@ function client.draw()
         end
 
         love.graphics.stacked('all', function() -- Camera transform
-            love.graphics.translate(-cameraX, -cameraY)
+            love.graphics.translate(-(cameraX - 0.5 * cameraW), -(cameraY - 0.5 * cameraH))
 
             do -- Nodes
                 local order = {}
@@ -335,7 +336,7 @@ function client.draw()
                     if player.me then
                         local photo = imageFromUrl(player.me.photoUrl)
                         if photo then
-                            love.graphics.draw(photo, x, y, 0, G / photo:getWidth(), G / photo:getHeight())
+                            love.graphics.draw(photo, x - 0.5 * G, y - 0.5 * G, 0, G / photo:getWidth(), G / photo:getHeight())
                         end
                     end
                 end
@@ -361,7 +362,7 @@ local prevMouseWX, prevMouseWY
 
 function client.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
-    local mouseWX, mouseWY = mouseX + cameraX, mouseY + cameraY
+    local mouseWX, mouseWY = mouseX + cameraX - 0.5 * cameraW, mouseY + cameraY - 0.5 * cameraH
     if not (prevMouseWX and prevMouseWY) then
         prevMouseWX, prevMouseWY = mouseWX, mouseWY
     end
@@ -396,7 +397,7 @@ function client.update(dt)
             end
 
             do -- Portals
-                local wx, wy = home.x + 0.5 * G, home.y + 0.5 * G
+                local wx, wy = home.x, home.y
 
                 for id, node in pairs(share.nodes) do
                     if node.portalEnabled then
@@ -406,7 +407,7 @@ function client.update(dt)
                             local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
                             if math.abs(lx) <= 0.5 * node.width and math.abs(ly) <= 0.5 * node.width then
                                 home.x, home.y = getWorldSpace(target).transform:transformPoint(0, 0)
-                                cameraX, cameraY = home.x - 0.5 * love.graphics.getWidth(), home.y - 0.5 * love.graphics.getHeight()
+                                cameraX, cameraY = home.x, home.y
                             end
                         end
                     end
@@ -415,17 +416,17 @@ function client.update(dt)
         end
 
         do -- Camera panning
-            if home.x < cameraX + CAMERA_GUTTER then
-                cameraX = home.x - CAMERA_GUTTER
+            if home.x - 0.5 * G < cameraX - 0.5 * cameraW + CAMERA_GUTTER then
+                cameraX = home.x - 0.5 * G + 0.5 * cameraW - CAMERA_GUTTER
             end
-            if home.x + G > cameraX + love.graphics.getWidth() - CAMERA_GUTTER then
-                cameraX = home.x + G - love.graphics.getWidth() + CAMERA_GUTTER
+            if home.x + 0.5 * G > cameraX + 0.5 * cameraW - CAMERA_GUTTER then
+                cameraX = home.x + 0.5 * G - 0.5 * cameraW + CAMERA_GUTTER
             end
-            if home.y < cameraY + CAMERA_GUTTER then
-                cameraY = home.y - CAMERA_GUTTER
+            if home.y - 0.5 * G < cameraY - 0.5 * cameraH + CAMERA_GUTTER then
+                cameraY = home.y - 0.5 * G + 0.5 * cameraH - CAMERA_GUTTER
             end
-            if home.y + G > cameraY + love.graphics.getHeight() - CAMERA_GUTTER then
-                cameraY = home.y + G - love.graphics.getHeight() + CAMERA_GUTTER
+            if home.y + 0.5 * G > cameraY + 0.5 * cameraH - CAMERA_GUTTER then
+                cameraY = home.y + 0.5 * G - 0.5 * cameraH + CAMERA_GUTTER
             end
         end
 
@@ -483,7 +484,7 @@ end
 --- MOUSE
 
 function client.mousepressed(x, y, button)
-    local wx, wy = x + cameraX, y + cameraY
+    local wx, wy = x + cameraX - 0.5 * cameraW, y + cameraY - 0.5 * cameraH
 
     if client.connected then
         if mode == 'none' then -- Click to select
