@@ -20,6 +20,15 @@ local home = client.home
 
 local cameraX, cameraY
 local cameraW, cameraH = 800, 450
+local cameraSizes = {
+    { },
+    { 640, 360 },
+    { 800, 450 }, -- Default
+    { 1200, 675 },
+    { 1600, 900 },
+    { 2400, 1350 },
+    { },
+}
 
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
@@ -224,7 +233,8 @@ function client.draw()
         end
 
         love.graphics.stacked('all', function() -- Camera transform
-            love.graphics.translate(-(cameraX - 0.5 * cameraW), -(cameraY - 0.5 * cameraH))
+            love.graphics.scale(love.graphics.getWidth() / cameraW, love.graphics.getHeight() / cameraH)
+            love.graphics.translate(-cameraX + 0.5 * cameraW, -cameraY + 0.5 * cameraH)
 
             do -- Nodes
                 local order = {}
@@ -362,7 +372,8 @@ local prevMouseWX, prevMouseWY
 
 function client.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
-    local mouseWX, mouseWY = mouseX + cameraX - 0.5 * cameraW, mouseY + cameraY - 0.5 * cameraH
+    local gW, gH = love.graphics.getWidth(), love.graphics.getHeight()
+    local mouseWX, mouseWY = (mouseX - 0.5 * gW) * (cameraW / gW) + cameraX, (mouseY - 0.5 * gH) * (cameraH / gH) + cameraY
     if not (prevMouseWX and prevMouseWY) then
         prevMouseWX, prevMouseWY = mouseWX, mouseWY
     end
@@ -484,7 +495,8 @@ end
 --- MOUSE
 
 function client.mousepressed(x, y, button)
-    local wx, wy = x + cameraX - 0.5 * cameraW, y + cameraY - 0.5 * cameraH
+    local gW, gH = love.graphics.getWidth(), love.graphics.getHeight()
+    local wx, wy = (x - 0.5 * gW) * (cameraW / gW) + cameraX, (y - 0.5 * gH) * (cameraH / gH) + cameraY
 
     if client.connected then
         if mode == 'none' then -- Click to select
@@ -544,6 +556,25 @@ function client.mousepressed(x, y, button)
 
         if mode == 'rotate' then -- Exit rotate
             mode = 'none'
+        end
+    end
+end
+
+function client.wheelmoved(x, y)
+    if y > 0 then -- Zoom in
+        for i = 1, #cameraSizes do
+            if cameraSizes[i][1] == cameraW and cameraSizes[i - 1][1] then
+                cameraW, cameraH = cameraSizes[i - 1][1], cameraSizes[i - 1][2]
+                break
+            end
+        end
+    end
+    if y < 0 then -- Zoom out
+        for i = 1, #cameraSizes do
+            if cameraSizes[i][1] == cameraW and cameraSizes[i + 1][1] then
+                cameraW, cameraH = cameraSizes[i + 1][1], cameraSizes[i + 1][2]
+                break
+            end
         end
     end
 end
