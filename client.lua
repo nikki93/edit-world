@@ -199,6 +199,13 @@ do
     end
 end
 
+local function drawBox(node)
+    love.graphics.stacked(function()
+        love.graphics.applyTransform(getWorldSpace(node).transform)
+        love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
+    end)
+end
+
 function client.draw()
     if client.connected then
         do -- Background color
@@ -259,8 +266,8 @@ function client.draw()
                             local qx, qy, qw, qh = theQuad:getViewport()
 
                             local scale = math.min(node.width / qw, node.height / qh)
-
-                            love.graphics.draw(image, theQuad, getWorldSpace(node).transform:clone():scale(scale))
+                            local transform = getWorldSpace(node).transform:clone():translate(-0.5 * node.width, -0.5 * node.height):scale(scale)
+                            love.graphics.draw(image, theQuad, transform)
                         end
                     end
 
@@ -268,7 +275,8 @@ function client.draw()
                         local font = fontFromUrl(node.text.fontUrl, node.text.fontSize)
                         if font then
                             love.graphics.setFont(font)
-                            love.graphics.printf({ { c.r, c.g, c.b, c.a }, node.text.text }, getWorldSpace(node).transform, node.width)
+                            local transform = getWorldSpace(node).transform:clone():translate(-0.5 * node.width, -0.5 * node.height)
+                            love.graphics.printf({ { c.r, c.g, c.b, c.a }, node.text.text }, transform, node.width)
                         end
                     end
 
@@ -280,39 +288,28 @@ function client.draw()
                 love.graphics.stacked('all', function() -- Draw group overlays
                     love.graphics.setColor(0.8, 0.5, 0.1)
                     for _, node in ipairs(groups) do
-                        love.graphics.stacked(function()
-                            love.graphics.applyTransform(getWorldSpace(node).transform)
-                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
-                        end)
+                        drawBox(node)
                     end
                 end)
 
                 love.graphics.stacked('all', function() -- Draw portal overlays
                     love.graphics.setColor(1, 0, 1)
                     for _, node in ipairs(portals) do
-                        love.graphics.stacked(function()
-                            love.graphics.applyTransform(getWorldSpace(node).transform)
-                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
-                        end)
+                        drawBox(node)
                     end
                 end)
 
                 love.graphics.stacked('all', function() -- Draw selection overlays
                     love.graphics.setColor(0, 1, 0)
                     for id, node in pairs(home.selected) do
-                        love.graphics.stacked(function()
-                            love.graphics.applyTransform(getWorldSpace(node).transform)
-                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
-                            love.graphics.circle('fill', 0, 0, 4)
-                        end)
+                        drawBox(node)
                     end
                 end)
 
                 if secondary then
                     love.graphics.stacked('all', function() -- Draw secondary overlay
                         love.graphics.setColor(1, 0, 0)
-                        love.graphics.applyTransform(getWorldSpace(secondary).transform)
-                        love.graphics.rectangle('line', -0.1 * G, -0.1 * G, secondary.width + 0.2 * G, secondary.height + 0.2 * G)
+                        drawBox(secondary)
                     end)
                 end
             end
@@ -398,9 +395,8 @@ function client.update(dt)
                         local target = targetId and share.nodes[targetId]
                         if target then
                             local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
-                            if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
-                                local tx, ty = getWorldSpace(target).transform:transformPoint(0.5 * target.width, 0.5 * target.height)
-                                home.x, home.y = tx - 0.5 * G, ty - 0.5 * G
+                            if math.abs(lx) <= 0.5 * node.width and math.abs(ly) <= 0.5 * node.width then
+                                home.x, home.y = getWorldSpace(target).transform:transformPoint(0, 0)
                                 cameraX, cameraY = tx - 0.5 * love.graphics.getWidth(), ty - 0.5 * love.graphics.getHeight()
                             end
                         end
@@ -446,7 +442,12 @@ function client.update(dt)
                 local transform = getWorldSpace(node).transform
                 local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
                 local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                node.width, node.height = math.max(G, node.width * lx / math.max(G, prevLX)), math.max(G, node.height * ly / math.max(G, prevLY))
+                if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                    node.width = math.max(G, node.width * lx / prevLX)
+                end
+                if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                    node.height = math.max(G, node.height * ly / prevLY)
+                end
             end
         end
 
@@ -498,7 +499,7 @@ function client.mousepressed(x, y, button)
             local hits = {}
             for id, node in pairs(share.nodes) do
                 local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
-                if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
+                if math.abs(lx) <= 0.5 * node.width and math.abs(ly) <= 0.5 * node.height then
                     table.insert(hits, node)
                 end
             end
