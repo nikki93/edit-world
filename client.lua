@@ -43,6 +43,9 @@ do
                 cache[node] = cached
 
                 local parentWorldSpace = getParentWorldSpace(node)
+                if not parentWorldSpace.transform then
+                    parentWorldSpace = rootSpace
+                end
                 cached.transform = parentWorldSpace.transform:clone():translate(node.x, node.y):rotate(node.rotation)
                 cached.depth = parentWorldSpace.depth + node.depth
             end
@@ -53,6 +56,12 @@ do
     function clearWorldSpace()
         cache = {}
     end
+end
+
+local function getTransformRotation(transform)
+    local ox, oy = transform:transformPoint(0, 0)
+    local ux, uy = transform:transformPoint(1, 0)
+    return math.atan2(uy - oy, ux - ox)
 end
 
 local function depthLess(node1, node2)
@@ -571,8 +580,33 @@ function client.keypressed(key)
             local secondary = share.nodes[secondaryId]
             if secondary then
                 if secondary.type == 'group' then
+                    local secondaryTransform = getWorldSpace(secondary).transform
+
                     for id, node in pairs(home.selected) do
-                        addToGroup(secondary, node)
+                        local cycle = false
+                        do
+                            local curr = secondary
+                            while curr do
+                                if curr.id == node.id then
+                                    cycle = true
+                                end
+                                curr = curr.parentId and share.nodes[curr.parentId]
+                            end
+                        end
+                        if not cycle then
+                            local nodeTransform = getWorldSpace(node).transform
+
+                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+
+                            local prevParent = node.parentId and share.nodes[node.parentId]
+                            if prevParent then
+                                removeFromGroup(prevParent, node)
+                            end
+                            addToGroup(secondary, node)
+                        else
+                            print('this would create a cycle!')
+                        end
                     end
                 else
                     print('only groups can be parents!')
@@ -794,6 +828,9 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                                     end
                                 end, function()
                                     if ui.button('unlink') then
+                                        local nodeTransform = getWorldSpace(node).transform
+                                        node.x, node.y = nodeTransform:transformPoint(0, 0)
+                                        node.rotation = getTransformRotation(nodeTransform)
                                         removeFromGroup(node, child)
                                     end
                                 end)
