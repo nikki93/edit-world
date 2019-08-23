@@ -159,9 +159,12 @@ function server.update(dt)
 
     do -- Unlocks
         for id, clientId in pairs(share.locks) do
-            local selected = homes[clientId].selected or {}
-            if not selected[id] then
-                share.locks[id] = nil
+            local home = homes[clientId] or {}
+            if home then
+                local selected = home.selected or {}
+                if not selected[id] then
+                    share.locks[id] = nil
+                end
             end
         end
     end
