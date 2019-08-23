@@ -20,11 +20,43 @@ local home = client.home
 
 local cameraX, cameraY
 
+local getWorldSpace, clearWorldSpace
+do
+    local cache = {}
+
+    local rootSpace = {
+        transform = love.math.newTransform(),
+        depth = 0,
+    }
+
+    function getWorldSpace(node)
+        if node == nil then
+            return rootSpace
+        else
+            local cached = cache[node]
+            if not cached then
+                cached = {}
+                cache[node] = cached
+
+                local parentSpace = getWorldSpace(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]))
+                cached.transform = parentSpace.transform:clone():translate(node.x, node.y):rotate(node.rotation)
+                cached.depth = parentSpace.depth + node.depth
+            end
+            return cached
+        end
+    end
+
+    function clearWorldSpace()
+        cache = {}
+    end
+end
+
 local function depthLess(node1, node2)
-    if node1.depth < node2.depth then
+    local space1, space2 = getWorldSpace(node1), getWorldSpace(node2)
+    if space1.depth < space2.depth then
         return true
     end
-    if node1.depth > node2.depth then
+    if space1.depth > space2.depth then
         return false
     end
     return node1.id < node2.id
@@ -71,6 +103,9 @@ local function cloneSelectedNodes(node)
         newNode.id = newId
         newNode.name = ''
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
+        if newNode.type == 'group' then
+            newNode.group.childrenIds = {}
+        end
         home.selected = { [newId] = newNode }
     end
 end
@@ -78,15 +113,18 @@ end
 
 --- LOAD
 
-local theQuad, theTransform
+local theQuad
 
 local secondaryId
+
+local defaultFont
 
 function client.load()
     cameraX, cameraY = -0.5 * love.graphics.getWidth(), -0.5 * love.graphics.getHeight()
 
     theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
-    theTransform = love.math.newTransform()
+
+    defaultFont = love.graphics.newFont(14)
 end
 
 
@@ -218,24 +256,16 @@ function client.draw()
 
                             local scale = math.min(node.width / qw, node.height / qh)
 
-                            love.graphics.draw(image, theQuad, node.x, node.y, node.rotation, scale)
+                            love.graphics.draw(image, theQuad, getWorldSpace(node).transform:clone():scale(scale))
                         end
                     end
 
                     if node.type == 'text' then
-                        love.graphics.stacked('all', function()
-                            love.graphics.translate(node.x, node.y)
-                            love.graphics.rotate(node.rotation)
-
-                            local c = node.text.color
-                            love.graphics.setColor(c.r, c.g, c.b, c.a)
-
-                            local font = fontFromUrl(node.text.fontUrl, node.text.fontSize)
-                            if font then
-                                love.graphics.setFont(font)
-                                love.graphics.printf(node.text.text, 0, 0, node.width)
-                            end
-                        end)
+                        local font = fontFromUrl(node.text.fontUrl, node.text.fontSize)
+                        if font then
+                            love.graphics.setFont(font)
+                            love.graphics.printf({ { c.r, c.g, c.b, c.a }, node.text.text }, getWorldSpace(node).transform, node.width)
+                        end
                     end
 
                     if node.type == 'group' then
@@ -247,8 +277,7 @@ function client.draw()
                     love.graphics.setColor(0.8, 0.5, 0.1)
                     for _, node in ipairs(groups) do
                         love.graphics.stacked(function()
-                            love.graphics.translate(node.x, node.y)
-                            love.graphics.rotate(node.rotation)
+                            love.graphics.applyTransform(getWorldSpace(node).transform)
                             love.graphics.rectangle('line', 0, 0, node.width, node.height)
                         end)
                     end
@@ -258,8 +287,7 @@ function client.draw()
                     love.graphics.setColor(1, 0, 1)
                     for _, node in ipairs(portals) do
                         love.graphics.stacked(function()
-                            love.graphics.translate(node.x, node.y)
-                            love.graphics.rotate(node.rotation)
+                            love.graphics.applyTransform(getWorldSpace(node).transform)
                             love.graphics.rectangle('line', 0, 0, node.width, node.height)
                         end)
                     end
@@ -269,8 +297,7 @@ function client.draw()
                     love.graphics.setColor(0, 1, 0)
                     for id, node in pairs(home.selected) do
                         love.graphics.stacked(function()
-                            love.graphics.translate(node.x, node.y)
-                            love.graphics.rotate(node.rotation)
+                            love.graphics.applyTransform(getWorldSpace(node).transform)
                             love.graphics.rectangle('line', 0, 0, node.width, node.height)
                             love.graphics.circle('fill', 0, 0, 4)
                         end)
@@ -280,8 +307,7 @@ function client.draw()
                 if secondary then
                     love.graphics.stacked('all', function() -- Draw secondary overlay
                         love.graphics.setColor(1, 0, 0)
-                        love.graphics.translate(secondary.x, secondary.y)
-                        love.graphics.rotate(secondary.rotation)
+                        love.graphics.applyTransform(getWorldSpace(secondary).transform)
                         love.graphics.rectangle('line', -0.1 * G, -0.1 * G, secondary.width + 0.2 * G, secondary.height + 0.2 * G)
                     end)
                 end
@@ -308,6 +334,7 @@ function client.draw()
 
         love.graphics.stacked('all', function()
             love.graphics.setColor(0, 0, 0)
+            love.graphics.setFont(defaultFont)
             love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
         end)
     else -- Not connected
@@ -330,6 +357,8 @@ function client.update(dt)
     end
 
     if client.connected then
+        clearWorldSpace()
+
         do -- Player motion
             local player = share.players[client.id]
 
@@ -364,15 +393,9 @@ function client.update(dt)
                         local targetId = share.names[node.portalTargetName]
                         local target = targetId and share.nodes[targetId]
                         if target then
-                            theTransform:reset()
-                            theTransform:translate(node.x, node.y)
-                            theTransform:rotate(node.rotation)
-                            local lx, ly = theTransform:inverseTransformPoint(wx, wy)
+                            local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
                             if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
-                                theTransform:reset()
-                                theTransform:translate(target.x, target.y)
-                                theTransform:rotate(target.rotation)
-                                local tx, ty = theTransform:transformPoint(0.5 * target.width, 0.5 * target.height)
+                                local tx, ty = getWorldSpace(target).transform:transformPoint(0.5 * target.width, 0.5 * target.height)
                                 home.x, home.y = tx - 0.5 * G, ty - 0.5 * G
                                 cameraX, cameraY = tx - 0.5 * love.graphics.getWidth(), ty - 0.5 * love.graphics.getHeight()
                             end
@@ -414,22 +437,18 @@ function client.update(dt)
 
         if mode == 'resize' then -- Resize
             for id, node in pairs(home.selected) do
-                theTransform:reset()
-                theTransform:translate(node.x, node.y)
-                theTransform:rotate(node.rotation)
-                local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
+                local transform = getWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
                 node.width, node.height = math.max(G, node.width * lx / math.max(G, prevLX)), math.max(G, node.height * ly / math.max(G, prevLY))
             end
         end
 
         if mode == 'rotate' then -- Rotate
             for id, node in pairs(home.selected) do
-                theTransform:reset()
-                theTransform:translate(node.x, node.y)
-                theTransform:rotate(node.rotation)
-                local prevLX, prevLY = theTransform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = theTransform:inverseTransformPoint(mouseWX, mouseWY)
+                local transform = getWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
                 node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
                 while node.rotation > math.pi do
                     node.rotation = node.rotation - 2 * math.pi
@@ -472,10 +491,7 @@ function client.mousepressed(x, y, button)
             -- Collect hits
             local hits = {}
             for id, node in pairs(share.nodes) do
-                theTransform:reset()
-                theTransform:translate(node.x, node.y)
-                theTransform:rotate(node.rotation)
-                local lx, ly = theTransform:inverseTransformPoint(wx, wy)
+                local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
                 if 0 <= lx and lx <= node.width and 0 <= ly and ly <= node.height then
                     table.insert(hits, node)
                 end
