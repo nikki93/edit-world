@@ -50,6 +50,8 @@ local cameraX, cameraY
 
 local theQuad, theTransform
 
+local secondaryId
+
 function client.load()
     cameraX, cameraY = -0.5 * love.graphics.getWidth(), -0.5 * love.graphics.getHeight()
 
@@ -151,11 +153,15 @@ function client.draw()
                     table.sort(order, depthLess)
                 end
 
-                local portals = {}
+                local portals, groups, secondary = {}, {}, nil
 
                 for _, node in ipairs(order) do -- Draw order
                     if node.portalEnabled then
                         table.insert(portals, node)
+                    end
+
+                    if secondaryId == node.id then
+                        secondary = node
                     end
 
                     if node.type == 'image' then
@@ -201,7 +207,22 @@ function client.draw()
                             end
                         end)
                     end
+
+                    if node.type == 'group' then
+                        table.insert(groups, node)
+                    end
                 end
+
+                love.graphics.stacked('all', function() -- Draw group overlays
+                    love.graphics.setColor(1, 1, 0)
+                    for _, node in ipairs(groups) do
+                        love.graphics.stacked(function()
+                            love.graphics.translate(node.x, node.y)
+                            love.graphics.rotate(node.rotation)
+                            love.graphics.rectangle('line', 0, 0, node.width, node.height)
+                        end)
+                    end
+                end)
 
                 love.graphics.stacked('all', function() -- Draw portal overlays
                     love.graphics.setColor(1, 0, 1)
@@ -225,6 +246,15 @@ function client.draw()
                         end)
                     end
                 end)
+
+                if secondary then
+                    love.graphics.stacked('all', function() -- Draw secondary overlay
+                        love.graphics.setColor(1, 0, 0)
+                        love.graphics.translate(secondary.x, secondary.y)
+                        love.graphics.rotate(secondary.rotation)
+                        love.graphics.rectangle('line', -0.1 * G, -0.1 * G, secondary.width + 0.2 * G, secondary.height + 0.2 * G)
+                    end)
+                end
             end
 
             do -- Players
@@ -392,6 +422,31 @@ function client.mousepressed(x, y, button)
 
     if client.connected then
         if mode == 'none' then -- Click to select
+            local isSelected, select -- Decide between primary or secondary selection
+            if button == 1 then -- Primary
+                function isSelected(id)
+                    return home.selected[id]
+                end
+                function select(node)
+                    if node then
+                        home.selected = { [node.id] = node }
+                    else
+                        home.selected = {}
+                    end
+                end
+            elseif button == 2 then -- Secondary
+                function isSelected(id)
+                    return secondaryId == id
+                end
+                function select(node)
+                    if node then
+                        secondaryId = node.id
+                    else
+                        secondaryId = nil
+                    end
+                end
+            end
+
             -- Collect hits
             local hits = {}
             for id, node in pairs(share.nodes) do
@@ -409,18 +464,14 @@ function client.mousepressed(x, y, button)
             local pick
             for i = 1, #hits do
                 local j = i == #hits and 1 or i + 1
-                if home.selected[hits[i].id] and not home.selected[hits[j].id] then
+                if isSelected(hits[i].id) and not isSelected(hits[j].id) then
                     pick = hits[j]
                 end
             end
             pick = pick or hits[1]
 
             -- Select it, or if nothing, just deselect all
-            if pick then
-                home.selected = { [pick.id] = pick }
-            else
-                home.selected = {}
-            end
+            select(pick)
         end
 
         if mode == 'grab' then -- Exit grab
@@ -462,6 +513,21 @@ function client.keypressed(key)
             mode = 'none'
         else
             mode = 'rotate'
+        end
+    end
+
+    if key == 'p' then -- Set parent
+        if secondaryId then
+            local secondary = share.nodes[secondaryId]
+            if secondary then
+                if secondary.type == 'group' then
+                    for id, node in pairs(home.selected) do
+                        addToGroup(node, secondary)
+                    end
+                else
+                    print('only groups can be parents!')
+                end
+            end
         end
     end
 end
@@ -573,7 +639,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
                     ui.markdown('---')
 
-                    ui.dropdown('type', node.type, { 'image', 'text' }, {
+                    ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
                         onChange = function(newType)
                             node[node.type] = nil
                             node.type = newType
@@ -666,6 +732,27 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
                         local c = node.text.color
                         c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                    end
+
+                    if node.type == 'group' then
+                        for childId in pairs(node.group.childrenIds) do
+                            local child = share.nodes[childId]
+                            if child then
+                                uiRow('child-' .. childId, function()
+                                    ui.markdown(child.type)
+                                end, function()
+                                    uiRow('select-unlink', function()
+                                        if ui.button('select') then
+                                            home.selected = { [child.id] = child }
+                                        end
+                                    end, function()
+                                        if ui.button('unlink') then
+                                            removeFromGroup(node, child)
+                                        end
+                                    end)
+                                end)
+                            end
+                        end
                     end
                 end
             end)

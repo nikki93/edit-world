@@ -25,6 +25,7 @@ NODE_COMMON_DEFAULTS = {
     height = 4 * G,
     portalEnabled = false,
     portalTargetName = '',
+    parentId = nil,
 }
 
 NODE_TYPE_DEFAULTS = {
@@ -42,6 +43,9 @@ NODE_TYPE_DEFAULTS = {
         fontSize = 14,
         color = { r = 0, g = 0, b = 0, a = 1 },
         fontUrl = '',
+    },
+    group = {
+        childrenIds = {},
     },
 }
 
@@ -63,3 +67,17 @@ end
 
 
 --- COMMON LOGIC
+
+function addToGroup(parent, child)
+    if child.parentId ~= parent.id and parent.type == 'group' then
+        child.parentId = parent.id
+        parent.group.childrenIds[child.id] = true
+    end
+end
+
+function removeFromGroup(parent, child)
+    if child.parentId == parent.id then
+        child.parentId = nil
+        parent.group.childrenIds[child.id] = nil
+    end
+end
