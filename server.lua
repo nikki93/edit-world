@@ -77,7 +77,11 @@ function server.receive(clientId, msg, ...)
         share.backgroundColor = post.data.backgroundColor
 
         share.nodes = post.data.nodes
-        for id, node in pairs(share.nodes) do
+
+        for id, node in pairs(share.nodes) do -- Migrate old formats
+            if node.name == nil then
+                node.name = ''
+            end
             if node.portalEnabled == nil then
                 node.portalEnabled = false
             end
