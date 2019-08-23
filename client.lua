@@ -747,11 +747,12 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                     local lock = share.locks[id]
                     if lock and lock ~= client.id then
                         badLock = client.id
+                        break
                     end
                 end
 
                 if badLock then
-                    local lockMe = share.players[clientId] and share.players[clientId].me
+                    local lockMe = share.players[badLock] and share.players[badLock].me
                     local lockUsername = (me and me.username) or 'unknown'
                     local lockPhoto = me and me.photoUrl
                     if lockPhoto then
