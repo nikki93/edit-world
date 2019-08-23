@@ -77,6 +77,7 @@ function server.receive(clientId, msg, ...)
         share.nodes = post.data.nodes
         share.names = {}
         for id, node in pairs(share.nodes) do
+            node.name = node.name or ''
             if node.name ~= '' then
                 share.names[node.name] = node.id
             end
