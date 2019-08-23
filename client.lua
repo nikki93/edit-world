@@ -504,7 +504,7 @@ function client.uiupdate()
                 ui.markdown([[
 in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes! **invite** friends through the 'Invite: ' link in the Castle bottom bar to collaborate.
 
-### moving
+### walking
 
 use the W, A, S and D keys to walk around.
 
@@ -527,7 +527,7 @@ with a node selected, press **G** to enter **grab mode** -- the node will move w
 
 similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
 
-### names
+### naming nodes
 
 nodes can optionally have **names** so that they can be referenced from other nodes. a name is considered invalid if some other node is already using it.
 
