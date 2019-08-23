@@ -79,14 +79,15 @@ function server.receive(clientId, msg, ...)
         share.nodes = post.data.nodes
 
         for id, node in pairs(share.nodes) do -- Migrate old formats
-            if node.name == nil then
-                node.name = ''
+            for k, v in pairs(NODE_COMMON_DEFAULTS) do
+                if node[k] == nil then
+                    node[k] = v
+                end
             end
-            if node.portalEnabled == nil then
-                node.portalEnabled = false
-            end
-            if node.portalTargetName == nil then
-                node.portalTargetName = ''
+            for k, v in pairs(NODE_TYPE_DEFAULTS[node.type]) do
+                if node[node.type][k] == nil then
+                    node[node.type][k] = v
+                end
             end
         end
 
@@ -118,19 +119,20 @@ function server.update(dt)
         end
     end
 
-    do -- Selecteds
+    do -- Edits
         for clientId in pairs(share.players) do
             local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
-            for id in pairs(deleted) do
+            for id in pairs(deleted) do -- Remove deleteds, tracking name changes
                 selected[id] = nil
 
-                local node = share.nodes[id]
-                if node and node.name ~= '' then
-                    share.names[node.name] = nil
+                local currNode = share.nodes[id]
+                if currNode and currNode.name ~= '' then
+                    share.names[currNode.name] = nil
                 end
+
                 share.nodes[id] = nil
             end
-            for id, node in pairs(selected) do
+            for id, node in pairs(selected) do -- Update selecteds, tracking name changes
                 local currNode = share.nodes[id]
                 local currName = (currNode and currNode.name) or ''
                 if currName ~= node.name then

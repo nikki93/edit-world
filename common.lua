@@ -14,6 +14,38 @@ CAMERA_GUTTER = 120
 
 MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 72
 
+NODE_COMMON_DEFAULTS = {
+    type = 'image',
+    name = '',
+    x = 0,
+    y = 0,
+    rotation = 0,
+    depth = 1,
+    width = 4 * G,
+    height = 4 * G,
+    portalEnabled = false,
+    portalTargetName = '',
+}
+
+NODE_TYPE_DEFAULTS = {
+    image = {
+        url = 'https://castle.games/static/logo.png',
+        smoothScaling = true,
+        crop = false,
+        cropX = 0,
+        cropY = 0,
+        cropWidth = 32,
+        cropHeight = 32,
+    },
+    text = {
+        text = 'type some\ntext here!',
+        fontSize = 14,
+        color = { r = 0, g = 0, b = 0, a = 1 },
+        fontUrl = '',
+    },
+}
+
+
 --- GRAPHICS UTILS
 
 if love.graphics then

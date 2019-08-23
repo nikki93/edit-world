@@ -86,7 +86,7 @@ end
 
 local imageFromUrl
 do
-    local cache = {}
+    local cache = {} -- url -> { image = image }
     function imageFromUrl(url)
         local cached = cache[url]
         if not cached then
@@ -100,16 +100,28 @@ do
     end
 end
 
-local fontWithSize
+local fontFromUrl
 do
-    local cache = {}
-    function fontWithSize(size)
-        local cached = cache[size]
-        if not cached then
-            cached = love.graphics.newFont(size)
-            cache[size] = cached
+    local cache = {} -- url --> size --> { font = font }
+    function fontFromUrl(url, size)
+        local cacheFontUrl = cache[url]
+        if not cacheFontUrl then
+            cacheFontUrl = {}
+            cache[url] = cacheFontUrl
         end
-        return cached
+        local cached = cacheFontUrl[size]
+        if not cached then
+            cached = {}
+            cacheFontUrl[size] = cached
+            if url == '' then
+                cached.font = love.graphics.newFont(size)
+            else
+                network.async(function()
+                    cached.font = love.graphics.newFont(url, size)
+                end)
+            end
+        end
+        return cached.font
     end
 end
 
@@ -182,8 +194,11 @@ function client.draw()
                             local c = node.text.color
                             love.graphics.setColor(c.r, c.g, c.b, c.a)
 
-                            love.graphics.setFont(fontWithSize(node.text.fontSize))
-                            love.graphics.printf(node.text.text, 0, 0, node.width)
+                            local font = fontFromUrl(node.text.fontUrl, node.text.fontSize)
+                            if font then
+                                love.graphics.setFont(font)
+                                love.graphics.printf(node.text.text, 0, 0, node.width)
+                            end
                         end)
                     end
                 end
@@ -348,7 +363,7 @@ function client.update(dt)
             end
         end
 
-        if mode == 'rotate' then
+        if mode == 'rotate' then -- Rotate
             for id, node in pairs(home.selected) do
                 theTransform:reset()
                 theTransform:translate(node.x, node.y)
@@ -367,15 +382,6 @@ function client.update(dt)
     end
 
     prevMouseWX, prevMouseWY = mouseWX, mouseWY
-end
-
-
---- CHANGING
-
-function client.changing(diff)
-    if diff.time and share.time then -- Make sure time only goes forward
-        diff.time = math.max(share.time, diff.time)
-    end
 end
 
 
@@ -435,7 +441,7 @@ end
 --- KEYBOARD
 
 function client.keypressed(key)
-    if key == 'g' then
+    if key == 'g' then -- Grab
         if mode == 'grab' then
             mode = 'none'
         else
@@ -443,7 +449,7 @@ function client.keypressed(key)
         end
     end
 
-    if key == 't' then
+    if key == 't' then -- Resize
         if mode == 'resize' then
             mode = 'none'
         else
@@ -451,7 +457,7 @@ function client.keypressed(key)
         end
     end
 
-    if key == 'r' then
+    if key == 'r' then -- Rotate
         if mode == 'rotate' then
             mode = 'none'
         else
@@ -481,23 +487,6 @@ local function uiRow(id, ...)
     end)
 end
 
-local defaults = {
-    image = {
-        url = 'https://castle.games/static/logo.png',
-        smoothScaling = true,
-        crop = false,
-        cropX = 0,
-        cropY = 0,
-        cropWidth = 32,
-        cropHeight = 32,
-    },
-    text = {
-        text = 'type some\ntext here!',
-        fontSize = 14,
-        color = { r = 0, g = 0, b = 0, a = 1 },
-    }
-}
-
 function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
@@ -520,7 +509,7 @@ use the **'type' dropdown** to switch to a different type of node (such as text)
 to **select** an existing node, just **click** it. when you make a new node, it is already selected. you can change its **properties** in the 'nodes' tab in the sidebar.
 
 - **images**: you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
-- **text**: you can change the **text** that is displayed, set its **font size** and **color**.
+- **text**: you can change the **text** that is displayed, set its **font size** and **color**, or select a **source url** for the font used.
 
 ### moving nodes
 
@@ -553,23 +542,14 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
             ui.tab('nodes', function()
                 if ui.button('new') then
                     local id = uuid()
-                    local typ = 'image'
-                    home.selected = {
-                        [id] = {
-                            id = id,
-                            type = typ,
-                            name = '',
-                            x = cameraX + 0.5 * love.graphics.getWidth(),
-                            y = cameraY + 0.5 * love.graphics.getHeight(),
-                            rotation = 0,
-                            depth = 1,
-                            width = 4 * G,
-                            height = 4 * G,
-                            portalEnabled = false,
-                            portalTargetName = '',
-                            [typ] = defaults[typ],
-                        },
-                    }
+
+                    home.selected = {}
+                    home.selected[id] = NODE_COMMON_DEFAULTS
+                    local newNode = home.selected[id]
+
+                    newNode.id = id
+                    newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
+                    newNode.x, newNode.y = cameraX + 0.5 * love.graphics.getWidth(), cameraY + 0.5 * love.graphics.getHeight()
                 end
 
                 ui.markdown('---')
@@ -597,7 +577,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                         onChange = function(newType)
                             node[node.type] = nil
                             node.type = newType
-                            node[node.type] = defaults[node.type]
+                            node[node.type] = NODE_TYPE_DEFAULTS[node.type]
                         end,
                     })
 
@@ -678,6 +658,8 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
                     if node.type == 'text' then
                         node.text.text = ui.textArea('text', node.text.text)
+
+                        node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
 
                         node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
                         node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
