@@ -506,8 +506,6 @@ end
 function client.mousepressed(x, y, button)
     prevMouseDown[button] = true
 
-    print('click')
-
     local gW, gH = love.graphics.getWidth(), love.graphics.getHeight()
     local wx, wy = (x - 0.5 * gW) * (cameraW / gW) + cameraX, (y - 0.5 * gH) * (cameraH / gH) + cameraY
 
