@@ -391,7 +391,7 @@ function client.update(dt)
         if love.mouse.isDown(button) and not prevMouseDown[button] then
             client.mousepressed(button, mouseX, mouseY)
         end
-        prevMouseDown[i] = love.mouse.isDown(button)
+        prevMouseDown[button] = love.mouse.isDown(button)
     end
 
     if client.connected then
