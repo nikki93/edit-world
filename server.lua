@@ -34,10 +34,6 @@ function server.load()
         share.nodes = {}
     end
 
-    do -- Names
-        share.names = {}
-    end
-
     do -- Locks
         share.locks = {}
     end
@@ -99,13 +95,6 @@ function server.receive(clientId, msg, ...)
                 end
             end
         end
-
-        share.names = {}
-        for id, node in pairs(share.nodes) do
-            if node.name ~= '' then
-                share.names[node.name] = node.id
-            end
-        end
     end
 
     if msg == 'addToGroup' then
@@ -155,29 +144,11 @@ function server.update(dt)
             local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
             for id in pairs(deleted) do -- Remove deleteds, tracking name changes
                 selected[id] = nil
-
-                local currNode = share.nodes[id]
-                if currNode and currNode.name ~= '' then
-                    share.names[currNode.name] = nil
-                end
-
                 share.nodes[id] = nil
             end
-            for id, node in pairs(selected) do -- Update selecteds, tracking name changes and locks
+            for id, node in pairs(selected) do -- Update selecteds, tracking locks
                 if not share.locks[id] or share.locks[id] == clientId then
                     share.locks[id] = clientId
-
-                    local currNode = share.nodes[id]
-                    local currName = (currNode and currNode.name) or ''
-                    if currName ~= node.name then
-                        if currName ~= '' then
-                            share.names[currName] = nil
-                        end
-                        if node.name ~= '' and not share.names[node.name] then
-                            share.names[node.name] = id
-                        end
-                    end
-
                     share.nodes[id] = node
                 end
             end

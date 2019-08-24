@@ -20,15 +20,6 @@ local home = client.home
 
 local cameraX, cameraY = 0, 0
 local cameraW, cameraH = 800, 450
-local cameraSizes = {
-    { },
-    { 640, 360 },
-    { 800, 450 }, -- Default
-    { 1200, 675 },
-    { 1600, 900 },
-    { 2400, 1350 },
-    { },
-}
 
 local function otherLocked(node)
     local lock = share.locks[id]
@@ -540,13 +531,13 @@ function client.mousepressed(x, y, button)
 
             -- Pick next in order if something is already selected, else pick first
             local pick
-            for i = 1, #hits do
-                local j = i == #hits and 1 or i + 1
+            for i = #hits, 1, -1 do
+                local j = i == 1 and #hits or i - 1
                 if isSelected(hits[i].id) and not isSelected(hits[j].id) then
                     pick = hits[j]
                 end
             end
-            pick = pick or hits[1]
+            pick = pick or hits[#hits]
 
             -- Select it, or if nothing, just deselect all
             if pick then
@@ -572,6 +563,15 @@ function client.mousepressed(x, y, button)
 end
 
 function client.wheelmoved(x, y)
+    local cameraSizes = {
+        { },
+        { 640, 360 },
+        { 800, 450 }, -- Default
+        { 1200, 675 },
+        { 1600, 900 },
+        { 2400, 1350 },
+        { },
+    }
     if y > 0 then -- Zoom in
         for i = 1, #cameraSizes do
             if cameraSizes[i][1] == cameraW and cameraSizes[i - 1][1] then
@@ -619,45 +619,44 @@ function client.keypressed(key)
     end
 
     if key == 'p' then -- Set parent
-        if secondaryId then
-            local secondary = share.nodes[secondaryId]
-            if secondary and not otherLocked(secondary) then
-                if secondary.type == 'group' then
-                    local secondaryTransform = getWorldSpace(secondary).transform
-
-                    for id, node in pairs(home.selected) do
-                        if not otherLocked(node) then
-                            local cycle = false
-                            do
-                                local curr = secondary
-                                while curr do
-                                    if curr.id == node.id then
-                                        cycle = true
-                                    end
-                                    curr = curr.parentId and share.nodes[curr.parentId]
+        local secondary = secondaryId and share.nodes[secondaryId]
+        if secondary and not otherLocked(secondary) then
+            if secondary.type == 'group' then
+                for id, node in pairs(home.selected) do
+                    if not otherLocked(node) then
+                        -- Make sure no cycles
+                        local cycle = false
+                        do
+                            local curr = secondary
+                            while curr do
+                                if curr.id == node.id then
+                                    cycle = true
                                 end
-                            end
-                            if not cycle then
-                                local nodeTransform = getWorldSpace(node).transform
-
-                                node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                                node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
-
-                                local prevParent = node.parentId and share.nodes[node.parentId]
-                                if not (prevParent and otherLocked(prevParent)) then
-                                    if prevParent then
-                                        removeFromGroup(prevParent, node)
-                                    end
-                                    addToGroup(secondary, node)
-                                end
-                            else
-                                print("can't add a node as a child of itself or one of its descendants!")
+                                curr = curr.parentId and share.nodes[curr.parentId]
                             end
                         end
+                        if not cycle then
+                            -- Update local transform
+                            local secondaryTransform = getWorldSpace(secondary).transform
+                            local nodeTransform = getWorldSpace(node).transform
+                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+
+                            -- Unlink old, link new
+                            local prevParent = node.parentId and share.nodes[node.parentId]
+                            if not (prevParent and otherLocked(prevParent)) then
+                                if prevParent then
+                                    removeFromGroup(prevParent, node)
+                                end
+                                addToGroup(secondary, node)
+                            end
+                        else
+                            print("can't add a node as a child of itself or one of its descendants!")
+                        end
                     end
-                else
-                    print('only groups can be parents!')
                 end
+            else
+                print('only groups can be parents!')
             end
         end
     end
@@ -707,9 +706,9 @@ function client.uiupdate()
                 if ui.button('new') then
                     newNode()
                 end
-
                 ui.markdown('---')
 
+                -- Check selection locked
                 local badLock
                 for id, node in pairs(home.selected) do
                     local lock = otherLocked(node)
@@ -719,7 +718,7 @@ function client.uiupdate()
                     end
                 end
 
-                if badLock then
+                if badLock then -- Selection locked?
                     local lockMe = share.players[badLock] and share.players[badLock].me
                     local lockUsername = (lockMe and lockMe.username) or 'unknown'
                     local lockPhoto = lockMe and lockMe.photoUrl
@@ -736,7 +735,7 @@ function client.uiupdate()
                     else
                         ui.markdown(lockUsername)
                     end
-                else
+                else -- Selection not locked...
                     for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
                         uiRow('delete-clone', function()
                             if ui.button('delete', { kind = 'danger' }) then
@@ -839,7 +838,7 @@ function client.uiupdate()
                                         uiRow('child-' .. childId, function()
                                             ui.markdown(child.type)
                                         end, function()
-                                            if ui.button('pick') then
+                                            if ui.button('show') then
                                                 secondaryId = child.id
                                             end
                                         end, function()
