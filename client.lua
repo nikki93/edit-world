@@ -687,6 +687,10 @@ local function uiRow(id, ...)
     end)
 end
 
+local nodeSectionOpen = true
+local typeSectionOpen = true
+local childrenSectionOpen = false
+
 function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
@@ -788,7 +792,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                     end
 
                     for id, node in pairs(home.selected) do
-                        ui.section('node', { defaultOpen = true }, function()
+                        nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
                             ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
                                 onChange = function(newType)
                                     node[node.type] = nil
@@ -841,7 +845,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                         end)
 
                         if node.type == 'image' then
-                            ui.section('image', { defaultOpen = true }, function()
+                            typeSectionOpen = ui.section('image', { open = typeSectionOpen }, function()
                                 node.image.url = ui.textInput('url', node.image.url)
 
                                 uiRow('smooth-scaling-crop', function()
@@ -874,7 +878,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                         end
 
                         if node.type == 'text' then
-                            ui.section('text', { defaultOpen = true }, function()
+                            typeSectionOpen = ui.section('text', { open = typeSectionOpen }, function()
                                 node.text.text = ui.textArea('text', node.text.text)
 
                                 node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
@@ -888,7 +892,7 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                         end
 
                         if node.type == 'group' then
-                            ui.section('children', function()
+                            childrenSectionOpen = ui.section('children', { open = childrenSectionOpen }, function()
                                 for childId in pairs(node.group.childrenIds) do
                                     local child = share.nodes[childId]
                                     if child then
