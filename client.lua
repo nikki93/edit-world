@@ -937,7 +937,6 @@ function client.uiupdate()
                     end)
                 end
             end)
-        end)
 
             ui.tab('help', function()
                 ui.markdown([[
@@ -987,6 +986,6 @@ in the **'world' tab** you can edit **world-level** properties such as the **bac
 in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can **open that post** to start a **new session** with the saved world.
                 ]])
             end)
-
+        end)
     end
 end
