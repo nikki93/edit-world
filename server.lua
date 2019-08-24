@@ -123,6 +123,25 @@ end
 
 --- UPDATE
 
+local compile
+do
+    local cache = {}
+
+    local env = {
+        string = string,
+        math = math,
+    }
+
+    function compile(code, desc)
+        local cached = cache[code]
+        if not cached then
+            cached = {}
+            cached.chunk = load(code, desc, 't', env)
+        end
+        return cached.chunk
+    end
+end
+
 function server.update(dt)
     do -- Player mes
         for clientId, player in pairs(share.players) do
@@ -162,6 +181,31 @@ function server.update(dt)
                 local selected = home.selected or {}
                 if not selected[id] then
                     share.locks[id] = nil
+                end
+            end
+        end
+    end
+
+    do -- Rules
+        for id, node in pairs(share.nodes) do
+            if node.type == 'group' then
+                for _, rule in pairs(node.group.rules) do
+                    if rule.event == 'update' then
+                        if rule.type == 'code' then
+                            local compiled = compile([[
+                                local self, dt = ...
+                                ]] .. rule.code.applied .. [[
+                                ]])
+                            if compiled then
+                                local succeeded, err = pcall(function()
+                                    compiled(node, dt)
+                                end)
+                                if not succeeded then
+                                    print(err)
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end

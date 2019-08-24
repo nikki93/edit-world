@@ -876,6 +876,48 @@ function client.uiupdate()
                                     end
                                 end
                             end)
+
+                            ui.markdown('---')
+
+                            if ui.button('add rule') then
+                                node.group.rules[#node.group.rules + 1] = {
+                                    event = 'update',
+                                    phrase = 'run code',
+                                    type = 'code',
+                                    code = {
+                                        edited = nil,
+                                        applied = '',
+                                    },
+                                }
+                            end
+
+                            for i = 1, #node.group.rules do
+                                local rule = node.group.rules[i]
+                                ui.section('on ' .. rule.event .. ', ' .. rule.phrase, function()
+                                    if rule.type == 'code' then
+                                        local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
+                                        if edit == rule.code.applied then
+                                            rule.code.edited = nil
+                                        else
+                                            rule.code.edited = edit
+                                        end
+                                        uiRow('apply', function()
+                                            if rule.code.edited then
+                                                ui.markdown('edited')
+                                            else
+                                                ui.markdown('applied')
+                                            end
+                                        end, function()
+                                            if rule.code.edited then
+                                                if ui.button('apply') then
+                                                    rule.code.applied = rule.code.edited
+                                                    rule.code.edited = nil
+                                                end
+                                            end
+                                        end)
+                                    end
+                                end)
+                            end
                         end
                     end
                 end
