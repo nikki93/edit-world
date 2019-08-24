@@ -733,55 +733,6 @@ local childrenSectionOpen = false
 function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
-            ui.tab('help', function()
-                ui.markdown([[
-in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes! **invite** friends through the 'Invite: ' link in the Castle bottom bar to collaborate.
-
-### walking
-
-use the W, A, S and D keys to walk around.
-
-### creating nodes
-
-to create a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
-
-use the **'type' dropdown** to switch to a different type of node (such as text).
-
-### editing nodes
-
-to **select** an existing node, just **click** it. when you make a new node, it is already selected. you can change its **properties** in the 'nodes' tab in the sidebar.
-
-- **images**: you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
-- **text**: you can change the **text** that is displayed, set its **font size** and **color**, or select a **source url** for the font used.
-
-### moving nodes
-
-with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
-
-similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
-
-### naming nodes
-
-nodes can optionally have **names** so that they can be referenced from other nodes. a name is considered invalid if some other node is already using it.
-
-names are useful when making **portals** (see below).
-
-### portals
-
-any node can be turned into a **portal** by turning 'portal' on in its properties. you can then enter the name of a target node in 'portal target name'. then, when a player touches the portal, they will be **teleported** to the target!
-
-portals always show a magenta rectangle around them.
-
-### editing world properties
-
-in the **'world' tab** you can edit **world-level** properties such as the **background color**.
-
-### saving the world
-
-in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can **open that post** to start a **new session** with the saved world.
-                ]])
-            end)
-
             ui.tab('nodes', function()
                 if ui.button('new') then
                     newNode()
@@ -987,5 +938,55 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                 end
             end)
         end)
+
+            ui.tab('help', function()
+                ui.markdown([[
+in edit world you can walk around the world, explore nodes placed by other people, or place your own nodes! **invite** friends through the 'Invite: ' link in the Castle bottom bar to collaborate.
+
+### walking
+
+use the W, A, S and D keys to walk around.
+
+### creating nodes
+
+to create a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
+
+use the **'type' dropdown** to switch to a different type of node (such as text).
+
+### editing nodes
+
+to **select** an existing node, just **click** it. when you make a new node, it is already selected. you can change its **properties** in the 'nodes' tab in the sidebar.
+
+- **images**: you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
+- **text**: you can change the **text** that is displayed, set its **font size** and **color**, or select a **source url** for the font used.
+
+### moving nodes
+
+with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
+
+similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
+
+### naming nodes
+
+nodes can optionally have **names** so that they can be referenced from other nodes. a name is considered invalid if some other node is already using it.
+
+names are useful when making **portals** (see below).
+
+### portals
+
+any node can be turned into a **portal** by turning 'portal' on in its properties. you can then enter the name of a target node in 'portal target name'. then, when a player touches the portal, they will be **teleported** to the target!
+
+portals always show a magenta rectangle around them.
+
+### editing world properties
+
+in the **'world' tab** you can edit **world-level** properties such as the **background color**.
+
+### saving the world
+
+in the 'world' tab, hit **'post world!'** to create a post storing the world. then you (or anyone!) can **open that post** to start a **new session** with the saved world.
+                ]])
+            end)
+
     end
 end
