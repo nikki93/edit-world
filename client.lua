@@ -389,7 +389,7 @@ function client.update(dt)
     end
     for button = 1, 2 do
         if love.mouse.isDown(button) and not prevMouseDown[button] then
-            client.mousepressed(button, mouseX, mouseY)
+            client.mousepressed(mouseX, mouseY, button)
         end
         prevMouseDown[button] = love.mouse.isDown(button)
     end
@@ -504,6 +504,10 @@ end
 --- MOUSE
 
 function client.mousepressed(x, y, button)
+    prevMouseDown[button] = true
+
+    print('click')
+
     local gW, gH = love.graphics.getWidth(), love.graphics.getHeight()
     local wx, wy = (x - 0.5 * gW) * (cameraW / gW) + cameraX, (y - 0.5 * gH) * (cameraH / gH) + cameraY
 
