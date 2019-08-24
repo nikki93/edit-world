@@ -72,17 +72,3 @@ end
 
 
 --- COMMON LOGIC
-
-function addToGroup(parent, child)
-    if child.parentId ~= parent.id and parent.type == 'group' then
-        child.parentId = parent.id
-        parent.group.childrenIds[child.id] = true
-    end
-end
-
-function removeFromGroup(parent, child)
-    if child.parentId == parent.id then
-        child.parentId = nil
-        parent.group.childrenIds[child.id] = nil
-    end
-end

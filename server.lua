@@ -107,6 +107,28 @@ function server.receive(clientId, msg, ...)
             end
         end
     end
+
+    if msg == 'addToGroup' then
+        local parentId, childId = ...
+        local parent, child = share.nodes[parentId], share.nodes[childId]
+        if parent and child then
+            if child.parentId ~= parent.id and parent.type == 'group' then
+                child.parentId = parent.id
+                parent.group.childrenIds[child.id] = true
+            end
+        end
+    end
+
+    if msg == 'removeFromGroup' then
+        local parentId, childId = ...
+        local parent, child = share.nodes[parentId], share.nodes[childId]
+        if parent and child then
+            if child.parentId == parent.id then
+                child.parentId = nil
+                parent.group.childrenIds[child.id] = nil
+            end
+        end
+    end
 end
 
 

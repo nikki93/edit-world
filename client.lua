@@ -114,8 +114,10 @@ end
 
 local function deleteSelectedNodes()
     for id, node in pairs(home.selected) do
-        home.deleted[node.id] = true
-        home.selected[node.id] = nil
+        if not otherLocked(node) then
+            home.deleted[node.id] = true
+            home.selected[node.id] = nil
+        end
     end
 end
 
@@ -130,6 +132,33 @@ local function cloneSelectedNodes(node)
             newNode.group.childrenIds = {}
         end
         home.selected = { [newId] = newNode }
+    end
+end
+
+local function otherLocked(node)
+    local lock = share.locks[id]
+    if lock and lock ~= client.id then
+        return lock
+    end
+end
+
+local function addToGroup(parent, child)
+    if not (otherLocked(parent) or otherLocked(child)) then
+        if child.parentId ~= parent.id and parent.type == 'group' then
+            child.parentId = parent.id
+            parent.group.childrenIds[child.id] = true
+            client.send('addToGroup', parent.id, child.id)
+        end
+    end
+end
+
+local function removeFromGroup(parent, child)
+    if not (otherLocked(parent) or otherLocked(child)) then
+        if child.parentId == parent.id then
+            child.parentId = nil
+            parent.group.childrenIds[child.id] = nil
+            client.send('removeFromGroup', parent.id, child.id)
+        end
     end
 end
 
@@ -457,38 +486,44 @@ function client.update(dt)
 
         if mode == 'grab' then -- Grab
             for id, node in pairs(home.selected) do
-                local transform = getParentWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
+                if not otherLocked(node) then
+                    local transform = getParentWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
+                end
             end
         end
 
         if mode == 'resize' then -- Resize
             for id, node in pairs(home.selected) do
-                local transform = getWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                    node.width = math.max(G, node.width * lx / prevLX)
-                end
-                if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                    node.height = math.max(G, node.height * ly / prevLY)
+                if not otherLocked(node) then
+                    local transform = getWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                        node.width = math.max(G, node.width * lx / prevLX)
+                    end
+                    if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                        node.height = math.max(G, node.height * ly / prevLY)
+                    end
                 end
             end
         end
 
         if mode == 'rotate' then -- Rotate
             for id, node in pairs(home.selected) do
-                local transform = getWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
-                while node.rotation > math.pi do
-                    node.rotation = node.rotation - 2 * math.pi
-                end
-                while node.rotation < -math.pi do
-                    node.rotation = node.rotation + 2 * math.pi
+                if not otherLocked(node) then
+                    local transform = getWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
+                    while node.rotation > math.pi do
+                        node.rotation = node.rotation - 2 * math.pi
+                    end
+                    while node.rotation < -math.pi do
+                        node.rotation = node.rotation + 2 * math.pi
+                    end
                 end
             end
         end
@@ -616,34 +651,38 @@ function client.keypressed(key)
     if key == 'p' then -- Set parent
         if secondaryId then
             local secondary = share.nodes[secondaryId]
-            if secondary then
+            if secondary and not otherLocked(secondary) then
                 if secondary.type == 'group' then
                     local secondaryTransform = getWorldSpace(secondary).transform
 
                     for id, node in pairs(home.selected) do
-                        local cycle = false
-                        do
-                            local curr = secondary
-                            while curr do
-                                if curr.id == node.id then
-                                    cycle = true
+                        if not otherLocked(node) then
+                            local cycle = false
+                            do
+                                local curr = secondary
+                                while curr do
+                                    if curr.id == node.id then
+                                        cycle = true
+                                    end
+                                    curr = curr.parentId and share.nodes[curr.parentId]
                                 end
-                                curr = curr.parentId and share.nodes[curr.parentId]
                             end
-                        end
-                        if not cycle then
-                            local nodeTransform = getWorldSpace(node).transform
+                            if not cycle then
+                                local nodeTransform = getWorldSpace(node).transform
 
-                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+                                node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                                node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
 
-                            local prevParent = node.parentId and share.nodes[node.parentId]
-                            if prevParent then
-                                removeFromGroup(prevParent, node)
+                                local prevParent = node.parentId and share.nodes[node.parentId]
+                                if not (prevParent and otherLocked(prevParent)) then
+                                    if prevParent then
+                                        removeFromGroup(prevParent, node)
+                                    end
+                                    addToGroup(secondary, node)
+                                end
+                            else
+                                print("can't add a node as a child of itself or one of its descendants!")
                             end
-                            addToGroup(secondary, node)
-                        else
-                            print('this would create a cycle!')
                         end
                     end
                 else
@@ -752,8 +791,8 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 
                 local badLock
                 for id, node in pairs(home.selected) do
-                    local lock = share.locks[id]
-                    if lock and lock ~= client.id then
+                    local lock = otherLocked(node)
+                    if lock then
                         badLock = lock
                         break
                     end
