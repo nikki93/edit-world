@@ -618,9 +618,9 @@ function client.keypressed(key)
         end
     end
 
-    if key == 'p' then -- Set parent
+    if key == 'p' then -- Parent
         local secondary = secondaryId and share.nodes[secondaryId]
-        if secondary and not otherLocked(secondary) then
+        if secondary and not otherLocked(secondary) then -- New parent
             if secondary.type == 'group' then
                 for id, node in pairs(home.selected) do
                     if not otherLocked(node) then
@@ -657,6 +657,19 @@ function client.keypressed(key)
                 end
             else
                 print('only groups can be parents!')
+            end
+        end
+        if not secondary then -- Remove parent
+            for id, node in pairs(home.selected) do
+                if not otherLocked(node) then
+                    local prevParent = node.parentId and share.nodes[node.parentId]
+                    if not (prevParent and otherLocked(prevParent)) then
+                        local nodeTransform = getWorldSpace(node).transform
+                        node.x, node.y = nodeTransform:transformPoint(0, 0)
+                        node.rotation = getTransformRotation(nodeTransform)
+                        removeFromGroup(prevParent, node)
+                    end
+                end
             end
         end
     end
@@ -843,10 +856,12 @@ function client.uiupdate()
                                             end
                                         end, function()
                                             if ui.button('unlink') then
-                                                local nodeTransform = getWorldSpace(node).transform
-                                                node.x, node.y = nodeTransform:transformPoint(0, 0)
-                                                node.rotation = getTransformRotation(nodeTransform)
-                                                removeFromGroup(node, child)
+                                                if not otherLocked(child) then
+                                                    local childTransform = getWorldSpace(child).transform
+                                                    child.x, child.y = childTransform:transformPoint(0, 0)
+                                                    child.rotation = getTransformRotation(childTransform)
+                                                    removeFromGroup(node, child)
+                                                end
                                             end
                                         end)
                                     end
@@ -899,7 +914,7 @@ use the W, A, S and D keys to walk around.
 
 to create a node, in the **'nodes' tab**, hit **'new'** and you will see an image appear in the center of your screen. this is a new node!
 
-use the **'type' dropdown** to switch to a different type of node (such as text).
+use the **'type' dropdown** to switch to a different type of node (such as text or group).
 
 ### editing nodes
 
@@ -907,12 +922,21 @@ to **select** an existing node, just **click** it. when you make a new node, it 
 
 - **images**: you can change the source **url** of the image, **crop** the image or change whether it scales **smooth**ly.
 - **text**: you can change the **text** that is displayed, set its **font size** and **color**, or select a **source url** for the font used.
+- **group**: you can see what children the group has and unlink children. to learn more about groups, check out the section on them below.
 
 ### moving nodes
 
 with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
 
 similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
+
+### groups
+
+groups can contain other nodes as 'children'. when you move or rotate a group, its children move and rotate with it. this allows you to organize the world when there are a lot of nodes.
+
+to add a node to a group, first select the node. then, right click on the group to select it as a **'secondary'** selection, shown as a **red** box around it (unlike the usual green box around a normal selection). then press P (for 'parent') to add the node as a child of the group, thus making the group the parent of that node.
+
+to remove a node from its parent group, simply select it then press P with no secondary selection active.
 
 ### editing world properties
 
