@@ -788,121 +788,127 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                     end
 
                     for id, node in pairs(home.selected) do
-                        ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
-                            onChange = function(newType)
-                                node[node.type] = nil
-                                node.type = newType
-                                node[node.type] = NODE_TYPE_DEFAULTS[node.type]
-                            end,
-                        })
+                        ui.section('node', { defaultOpen = true }, function()
+                            ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
+                                onChange = function(newType)
+                                    node[node.type] = nil
+                                    node.type = newType
+                                    node[node.type] = NODE_TYPE_DEFAULTS[node.type]
+                                end,
+                            })
 
-                        local nameInvalid = false
-                        if node.name ~= '' then
-                            local usedId = share.names[node.name]
-                            if usedId and usedId ~= node.id then
-                                nameInvalid = true
-                            end
-                        end
-                        node.name = ui.textInput('name', node.name, {
-                            invalid = nameInvalid,
-                            invalidText = 'this name is in use by a different node',
-                        })
-
-                        uiRow('position', function()
-                            node.x = ui.numberInput('x', node.x)
-                        end, function()
-                            node.y = ui.numberInput('y', node.y)
-                        end)
-
-                        uiRow('rotation-depth', function()
-                            ui.numberInput('rotation', node.rotation * 180 / math.pi, {
-                                onChange = function (newVal)
-                                    node.rotation = newVal * math.pi / 180
+                            local nameInvalid = false
+                            if node.name ~= '' then
+                                local usedId = share.names[node.name]
+                                if usedId and usedId ~= node.id then
+                                    nameInvalid = true
                                 end
+                            end
+                            node.name = ui.textInput('name', node.name, {
+                                invalid = nameInvalid,
+                                invalidText = 'this name is in use by a different node',
                             })
-                        end, function()
-                            node.depth = ui.numberInput('depth', node.depth)
-                        end)
 
-                        uiRow('size', function()
-                            node.width = ui.numberInput('width', node.width)
-                        end, function()
-                            node.height = ui.numberInput('height', node.height)
-                        end)
-
-                        node.portalEnabled = ui.toggle('portal', 'portal', node.portalEnabled)
-                        if node.portalEnabled then
-                            node.portalTargetName = ui.textInput('portal target name', node.portalTargetName, {
-                                invalid = share.names[node.portalTargetName] == nil,
-                                invalidText = node.portalTargetName == '' and 'portals need the name of a target node' or 'there is no node with this name'
-                            })
-                        end
-
-                        ui.markdown('---')
-
-                        if node.type == 'image' then
-                            node.image.url = ui.textInput('image url', node.image.url)
-
-                            uiRow('smooth-scaling-crop', function()
-                                node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)
+                            uiRow('position', function()
+                                node.x = ui.numberInput('x', node.x)
                             end, function()
-                                node.image.crop = ui.toggle('crop', 'crop', node.image.crop)
+                                node.y = ui.numberInput('y', node.y)
                             end)
 
-                            if node.image.crop then
-                                uiRow('crop-xy', function()
-                                    node.image.cropX = ui.numberInput('crop x', node.image.cropX)
+                            uiRow('rotation-depth', function()
+                                ui.numberInput('rotation', node.rotation * 180 / math.pi, {
+                                    onChange = function (newVal)
+                                        node.rotation = newVal * math.pi / 180
+                                    end
+                                })
+                            end, function()
+                                node.depth = ui.numberInput('depth', node.depth)
+                            end)
+
+                            uiRow('size', function()
+                                node.width = ui.numberInput('width', node.width)
+                            end, function()
+                                node.height = ui.numberInput('height', node.height)
+                            end)
+
+                            node.portalEnabled = ui.toggle('portal', 'portal', node.portalEnabled)
+                            if node.portalEnabled then
+                                node.portalTargetName = ui.textInput('portal target name', node.portalTargetName, {
+                                    invalid = share.names[node.portalTargetName] == nil,
+                                    invalidText = node.portalTargetName == '' and 'portals need the name of a target node' or 'there is no node with this name'
+                                })
+                            end
+                        end)
+
+                        if node.type == 'image' then
+                            ui.section('image', { defaultOpen = true }, function()
+                                node.image.url = ui.textInput('url', node.image.url)
+
+                                uiRow('smooth-scaling-crop', function()
+                                    node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)
                                 end, function()
-                                    node.image.cropY = ui.numberInput('crop y', node.image.cropY)
-                                end)
-                                uiRow('crop-size', function()
-                                    node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
-                                end, function()
-                                    node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
+                                    node.image.crop = ui.toggle('crop', 'crop', node.image.crop)
                                 end)
 
-                                if ui.button('reset crop') then
-                                    local image = imageFromUrl(node.image.url)
-                                    if image then
-                                        node.image.cropX, node.image.cropY = 0, 0
-                                        node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
+                                if node.image.crop then
+                                    uiRow('crop-xy', function()
+                                        node.image.cropX = ui.numberInput('crop x', node.image.cropX)
+                                    end, function()
+                                        node.image.cropY = ui.numberInput('crop y', node.image.cropY)
+                                    end)
+                                    uiRow('crop-size', function()
+                                        node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
+                                    end, function()
+                                        node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
+                                    end)
+
+                                    if ui.button('reset crop') then
+                                        local image = imageFromUrl(node.image.url)
+                                        if image then
+                                            node.image.cropX, node.image.cropY = 0, 0
+                                            node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
+                                        end
                                     end
                                 end
-                            end
+                            end)
                         end
 
                         if node.type == 'text' then
-                            node.text.text = ui.textArea('text', node.text.text)
+                            ui.section('text', { defaultOpen = true }, function()
+                                node.text.text = ui.textArea('text', node.text.text)
 
-                            node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
+                                node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
 
-                            node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
-                            node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
+                                node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
+                                node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
 
-                            local c = node.text.color
-                            c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                                local c = node.text.color
+                                c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                            end)
                         end
 
                         if node.type == 'group' then
-                            for childId in pairs(node.group.childrenIds) do
-                                local child = share.nodes[childId]
-                                if child then
-                                    uiRow('child-' .. childId, function()
-                                        ui.markdown(child.type)
-                                    end, function()
-                                        if ui.button('pick') then
-                                            secondaryId = child.id
-                                        end
-                                    end, function()
-                                        if ui.button('unlink') then
-                                            local nodeTransform = getWorldSpace(node).transform
-                                            node.x, node.y = nodeTransform:transformPoint(0, 0)
-                                            node.rotation = getTransformRotation(nodeTransform)
-                                            removeFromGroup(node, child)
-                                        end
-                                    end)
+                            ui.section('children', function()
+                                for childId in pairs(node.group.childrenIds) do
+                                    local child = share.nodes[childId]
+                                    if child then
+                                        uiRow('child-' .. childId, function()
+                                            ui.markdown(child.type)
+                                        end, function()
+                                            if ui.button('pick') then
+                                                secondaryId = child.id
+                                            end
+                                        end, function()
+                                            if ui.button('unlink') then
+                                                local nodeTransform = getWorldSpace(node).transform
+                                                node.x, node.y = nodeTransform:transformPoint(0, 0)
+                                                node.rotation = getTransformRotation(nodeTransform)
+                                                removeFromGroup(node, child)
+                                            end
+                                        end)
+                                    end
                                 end
-                            end
+                            end)
                         end
                     end
                 end
@@ -923,8 +929,6 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
                 })
 
                 ui.box('spacer', { height = 40 }, function() end)
-
-                ui.markdown('---')
 
                 if ui.button('post world!') then
                     network.async(function()
