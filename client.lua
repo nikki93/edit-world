@@ -378,6 +378,7 @@ end
 local mode = 'none'
 
 local prevMouseWX, prevMouseWY
+local prevMouseDown = { false, false }
 
 function client.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
@@ -385,6 +386,12 @@ function client.update(dt)
     local mouseWX, mouseWY = (mouseX - 0.5 * gW) * (cameraW / gW) + cameraX, (mouseY - 0.5 * gH) * (cameraH / gH) + cameraY
     if not (prevMouseWX and prevMouseWY) then
         prevMouseWX, prevMouseWY = mouseWX, mouseWY
+    end
+    for button = 1, 2 do
+        if love.mouse.isDown(button) and not prevMouseDown[button] then
+            client.mousepressed(button, mouseX, mouseY)
+        end
+        prevMouseDown[i] = love.mouse.isDown(button)
     end
 
     if client.connected then
