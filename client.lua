@@ -30,6 +30,13 @@ local cameraSizes = {
     { },
 }
 
+local function otherLocked(node)
+    local lock = share.locks[id]
+    if lock and lock ~= client.id then
+        return lock
+    end
+end
+
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
     local cache = {}
@@ -132,13 +139,6 @@ local function cloneSelectedNodes(node)
             newNode.group.childrenIds = {}
         end
         home.selected = { [newId] = newNode }
-    end
-end
-
-local function otherLocked(node)
-    local lock = share.locks[id]
-    if lock and lock ~= client.id then
-        return lock
     end
 end
 
