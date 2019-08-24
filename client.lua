@@ -133,7 +133,6 @@ local function cloneSelectedNodes(node)
         local newId = uuid()
         local newNode = cloneValue(node)
         newNode.id = newId
-        newNode.name = ''
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
         if newNode.type == 'group' then
             newNode.group.childrenIds = {}
@@ -281,13 +280,9 @@ function client.draw()
                     table.sort(order, depthLess)
                 end
 
-                local portals, groups, secondary = {}, {}, nil
+                local groups, secondary = {}, nil
 
                 for _, node in ipairs(order) do -- Draw order
-                    if node.portalEnabled then
-                        table.insert(portals, node)
-                    end
-
                     if secondaryId == node.id then
                         secondary = node
                     end
@@ -338,13 +333,6 @@ function client.draw()
                 love.graphics.stacked('all', function() -- Draw group overlays
                     love.graphics.setColor(0.8, 0.5, 0.1)
                     for _, node in ipairs(groups) do
-                        drawBox(node)
-                    end
-                end)
-
-                love.graphics.stacked('all', function() -- Draw portal overlays
-                    love.graphics.setColor(1, 0, 1)
-                    for _, node in ipairs(portals) do
                         drawBox(node)
                     end
                 end)
@@ -439,24 +427,6 @@ function client.update(dt)
                     vy = vy + WALK_SPEED
                 end
                 home.x, home.y = home.x + vx * dt, home.y + vy * dt
-            end
-
-            do -- Portals
-                local wx, wy = home.x, home.y
-
-                for id, node in pairs(share.nodes) do
-                    if node.portalEnabled then
-                        local targetId = share.names[node.portalTargetName]
-                        local target = targetId and share.nodes[targetId]
-                        if target then
-                            local lx, ly = getWorldSpace(node).transform:inverseTransformPoint(wx, wy)
-                            if math.abs(lx) <= 0.5 * node.width and math.abs(ly) <= 0.5 * node.width then
-                                home.x, home.y = getWorldSpace(target).transform:transformPoint(0, 0)
-                                cameraX, cameraY = home.x, home.y
-                            end
-                        end
-                    end
-                end
             end
         end
 
@@ -791,18 +761,6 @@ function client.uiupdate()
                                 end,
                             })
 
-                            local nameInvalid = false
-                            if node.name ~= '' then
-                                local usedId = share.names[node.name]
-                                if usedId and usedId ~= node.id then
-                                    nameInvalid = true
-                                end
-                            end
-                            node.name = ui.textInput('name', node.name, {
-                                invalid = nameInvalid,
-                                invalidText = 'this name is in use by a different node',
-                            })
-
                             uiRow('position', function()
                                 node.x = ui.numberInput('x', node.x)
                             end, function()
@@ -824,14 +782,6 @@ function client.uiupdate()
                             end, function()
                                 node.height = ui.numberInput('height', node.height)
                             end)
-
-                            node.portalEnabled = ui.toggle('portal', 'portal', node.portalEnabled)
-                            if node.portalEnabled then
-                                node.portalTargetName = ui.textInput('portal target name', node.portalTargetName, {
-                                    invalid = share.names[node.portalTargetName] == nil,
-                                    invalidText = node.portalTargetName == '' and 'portals need the name of a target node' or 'there is no node with this name'
-                                })
-                            end
                         end)
 
                         if node.type == 'image' then
@@ -964,18 +914,6 @@ to **select** an existing node, just **click** it. when you make a new node, it 
 with a node selected, press **G** to enter **grab mode** -- the node will move with your mouse cursor. press G again or click to exit grab mode.
 
 similarly, **T** enters **resize mode** where you can use the mouse to change the node's width and height, and **R** enters **rotate mode** where you can change the node's rotation.
-
-### naming nodes
-
-nodes can optionally have **names** so that they can be referenced from other nodes. a name is considered invalid if some other node is already using it.
-
-names are useful when making **portals** (see below).
-
-### portals
-
-any node can be turned into a **portal** by turning 'portal' on in its properties. you can then enter the name of a target node in 'portal target name'. then, when a player touches the portal, they will be **teleported** to the target!
-
-portals always show a magenta rectangle around them.
 
 ### editing world properties
 
