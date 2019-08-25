@@ -55,7 +55,7 @@ SETTINGS_DEFAULTS = {
 RULE_COMMON_DEFAULTS = {
     event = 'update',
     type = 'code',
-    phrase = '',
+    description = '',
 }
 
 RULE_TYPE_DEFAULTS = {
@@ -65,11 +65,11 @@ RULE_TYPE_DEFAULTS = {
     },
 }
 
-RULE_PHRASE_DEFAULTS = {
+RULE_DESCRIPTION_DEFAULTS = {
     code = 'run code',
 }
 
-MAX_RULE_PHRASE_LENGTH = 32
+MAX_RULE_DESCRIPTION_LENGTH = 32
 
 
 --- GRAPHICS UTILS
@@ -90,8 +90,8 @@ end
 
 --- COMMON LOGIC
 
-function getRulePhrase(rule)
-    return rule.phrase == '' and RULE_PHRASE_DEFAULTS[rule.type] or rule.phrase
+function getRuleDescription(rule)
+    return rule.description == '' and RULE_DESCRIPTION_DEFAULTS[rule.type] or rule.description
 end
 
 do
@@ -123,7 +123,7 @@ function runUpdateRules(node, dt)
             if rule.event == 'update' then
                 if rule.type == 'code' then
                     local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
-                    local compiled = compileCode(fullCode, getRulePhrase(rule))
+                    local compiled = compileCode(fullCode, getRuleDescription(rule))
                     if compiled then
                         local succeeded, err = pcall(function()
                             compiled(node, dt)

@@ -847,7 +847,7 @@ function client.uiupdate()
 
                         for i = 1, #node.group.rules do
                             local rule = node.group.rules[i]
-                            ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRulePhrase(rule), {
+                            ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRuleDescription(rule), {
                                 id = rule.id,
                                 open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
                             }, function()
@@ -860,10 +860,10 @@ function client.uiupdate()
                                     })
                                 end)
 
-                                rule.phrase = ui.textInput('phrase', rule.phrase, {
-                                    maxLength = MAX_RULE_PHRASE_LENGTH,
+                                rule.description = ui.textInput('description', rule.description, {
+                                    maxLength = MAX_RULE_DESCRIPTION_LENGTH,
                                 })
-                                rule.phrase = rule.phrase:sub(1, MAX_RULE_PHRASE_LENGTH)
+                                rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
 
                                 if rule.type == 'code' then
                                     local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
