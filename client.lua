@@ -720,6 +720,7 @@ end
 local nodeSectionOpen = true
 local typeSectionOpen = true
 local childrenSectionOpen = false
+local ruleSectionOpen = {}
 
 function client.uiupdate()
     if client.connected then
@@ -880,20 +881,34 @@ function client.uiupdate()
                             ui.markdown('---')
 
                             if ui.button('add rule') then
-                                node.group.rules[#node.group.rules + 1] = {
-                                    event = 'update',
-                                    phrase = 'run code',
-                                    type = 'code',
-                                    code = {
-                                        edited = nil,
-                                        applied = '',
-                                    },
-                                }
+                                local newIndex = #node.group.rules + 1
+                                node.group.rules[newIndex] = RULE_COMMON_DEFAULTS
+                                local newRule = node.group.rules[newIndex]
+                                newRule.id = uuid()
+
+                                newRule[newRule.type] = RULE_TYPE_DEFAULTS[newRule.type]
                             end
 
                             for i = 1, #node.group.rules do
                                 local rule = node.group.rules[i]
-                                ui.section('on ' .. rule.event .. ', ' .. rule.phrase, function()
+                                ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRulePhrase(rule), {
+                                    id = rule.id,
+                                    open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
+                                }, function()
+                                    uiRow('event-type', function()
+                                        rule.event = ui.dropdown('event', rule.event, { 'update' })
+                                    end, function()
+                                        ui.dropdown('type', rule.type, { 'code' }, {
+                                            onChange = function(newType)
+                                            end
+                                        })
+                                    end)
+
+                                    rule.phrase = ui.textInput('phrase', rule.phrase, {
+                                        maxLength = MAX_RULE_PHRASE_LENGTH,
+                                    })
+                                    rule.phrase = rule.phrase:sub(1, MAX_RULE_PHRASE_LENGTH)
+
                                     if rule.type == 'code' then
                                         local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
                                         if edit == rule.code.applied then

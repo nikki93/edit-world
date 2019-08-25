@@ -52,6 +52,25 @@ SETTINGS_DEFAULTS = {
     defaultSmoothScaling = true,
 }
 
+RULE_COMMON_DEFAULTS = {
+    event = 'update',
+    type = 'code',
+    phrase = '',
+}
+
+RULE_TYPE_DEFAULTS = {
+    code = {
+        edited = nil,
+        applied = '',
+    },
+}
+
+RULE_PHRASE_DEFAULTS = {
+    code = 'run code',
+}
+
+MAX_RULE_PHRASE_LENGTH = 32
+
 
 --- GRAPHICS UTILS
 
@@ -70,3 +89,7 @@ end
 
 
 --- COMMON LOGIC
+
+function getRulePhrase(rule)
+    return rule.phrase == '' and RULE_PHRASE_DEFAULTS[rule.type] or rule.phrase
+end

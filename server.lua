@@ -83,7 +83,7 @@ function server.receive(clientId, msg, ...)
 
         share.nodes = post.data.nodes
 
-        for id, node in pairs(share.nodes) do -- Migrate old formats
+        for id, node in pairs(share.nodes) do -- Migrate old nodes
             for k, v in pairs(NODE_COMMON_DEFAULTS) do
                 if node[k] == nil then
                     node[k] = v
@@ -136,9 +136,14 @@ do
         local cached = cache[code]
         if not cached then
             cached = {}
-            cached.chunk = load(code, desc, 't', env)
+            local chunk, err = load(code, desc, 't', env)
+            if chunk then
+                cached.func = chunk()
+            else
+                print(err)
+            end
         end
-        return cached.chunk
+        return cached.func
     end
 end
 
@@ -192,10 +197,8 @@ function server.update(dt)
                 for _, rule in pairs(node.group.rules) do
                     if rule.event == 'update' then
                         if rule.type == 'code' then
-                            local compiled = compile([[
-                                local self, dt = ...
-                                ]] .. rule.code.applied .. [[
-                                ]])
+                            local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
+                            local compiled = compile(fullCode, getRulePhrase(rule))
                             if compiled then
                                 local succeeded, err = pcall(function()
                                     compiled(node, dt)
