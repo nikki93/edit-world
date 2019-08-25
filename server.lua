@@ -33,10 +33,6 @@ function server.load()
     do -- Nodes
         share.nodes = {}
     end
-
-    do -- Locks
-        share.locks = {}
-    end
 end
 
 
@@ -171,22 +167,7 @@ function server.update(dt)
                 share.nodes[id] = nil
             end
             for id, node in pairs(selected) do -- Update selecteds, tracking locks
-                if not share.locks[id] or share.locks[id] == clientId then
-                    share.locks[id] = clientId
-                    share.nodes[id] = node
-                end
-            end
-        end
-    end
-
-    do -- Unlocks
-        for id, clientId in pairs(share.locks) do
-            local home = homes[clientId] or {}
-            if home then
-                local selected = home.selected or {}
-                if not selected[id] then
-                    share.locks[id] = nil
-                end
+                share.nodes[id] = node
             end
         end
     end

@@ -21,13 +21,6 @@ local home = client.home
 local cameraX, cameraY = 0, 0
 local cameraW, cameraH = 800, 450
 
-local function otherLocked(node)
-    local lock = share.locks[id]
-    if lock and lock ~= client.id then
-        return lock
-    end
-end
-
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
     local cache = {}
@@ -112,10 +105,8 @@ end
 
 local function deleteSelectedNodes()
     for id, node in pairs(home.selected) do
-        if not otherLocked(node) then
-            home.deleted[node.id] = true
-            home.selected[node.id] = nil
-        end
+        home.deleted[node.id] = true
+        home.selected[node.id] = nil
     end
 end
 
@@ -133,22 +124,18 @@ local function cloneSelectedNodes(node)
 end
 
 local function addToGroup(parent, child)
-    if not (otherLocked(parent) or otherLocked(child)) then
-        if child.parentId ~= parent.id and parent.type == 'group' then
-            child.parentId = parent.id
-            parent.group.childrenIds[child.id] = true
-            client.send('addToGroup', parent.id, child.id)
-        end
+    if child.parentId ~= parent.id and parent.type == 'group' then
+        child.parentId = parent.id
+        parent.group.childrenIds[child.id] = true
+        client.send('addToGroup', parent.id, child.id)
     end
 end
 
 local function removeFromGroup(parent, child)
-    if not (otherLocked(parent) or otherLocked(child)) then
-        if child.parentId == parent.id then
-            child.parentId = nil
-            parent.group.childrenIds[child.id] = nil
-            client.send('removeFromGroup', parent.id, child.id)
-        end
+    if child.parentId == parent.id then
+        child.parentId = nil
+        parent.group.childrenIds[child.id] = nil
+        client.send('removeFromGroup', parent.id, child.id)
     end
 end
 
@@ -454,44 +441,38 @@ function client.update(dt)
 
         if mode == 'grab' then -- Grab
             for id, node in pairs(home.selected) do
-                if not otherLocked(node) then
-                    local transform = getParentWorldSpace(node).transform
-                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                    node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
-                end
+                local transform = getParentWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
             end
         end
 
         if mode == 'resize' then -- Resize
             for id, node in pairs(home.selected) do
-                if not otherLocked(node) then
-                    local transform = getWorldSpace(node).transform
-                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                    if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                        node.width = math.max(G, node.width * lx / prevLX)
-                    end
-                    if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                        node.height = math.max(G, node.height * ly / prevLY)
-                    end
+                local transform = getWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                    node.width = math.max(G, node.width * lx / prevLX)
+                end
+                if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                    node.height = math.max(G, node.height * ly / prevLY)
                 end
             end
         end
 
         if mode == 'rotate' then -- Rotate
             for id, node in pairs(home.selected) do
-                if not otherLocked(node) then
-                    local transform = getWorldSpace(node).transform
-                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                    node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
-                    while node.rotation > math.pi do
-                        node.rotation = node.rotation - 2 * math.pi
-                    end
-                    while node.rotation < -math.pi do
-                        node.rotation = node.rotation + 2 * math.pi
-                    end
+                local transform = getWorldSpace(node).transform
+                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
+                while node.rotation > math.pi do
+                    node.rotation = node.rotation - 2 * math.pi
+                end
+                while node.rotation < -math.pi do
+                    node.rotation = node.rotation + 2 * math.pi
                 end
             end
         end
@@ -629,39 +610,37 @@ function client.keypressed(key)
 
     if key == 'p' then -- Parent
         local secondary = secondaryId and share.nodes[secondaryId]
-        if secondary and not otherLocked(secondary) then -- New parent
+        if secondary then -- New parent
             if secondary.type == 'group' then
                 for id, node in pairs(home.selected) do
-                    if not otherLocked(node) then
-                        -- Make sure no cycles
-                        local cycle = false
-                        do
-                            local curr = secondary
-                            while curr do
-                                if curr.id == node.id then
-                                    cycle = true
-                                end
-                                curr = curr.parentId and share.nodes[curr.parentId]
+                    -- Make sure no cycles
+                    local cycle = false
+                    do
+                        local curr = secondary
+                        while curr do
+                            if curr.id == node.id then
+                                cycle = true
                             end
+                            curr = curr.parentId and share.nodes[curr.parentId]
                         end
-                        if not cycle then
-                            -- Update local transform
-                            local secondaryTransform = getWorldSpace(secondary).transform
-                            local nodeTransform = getWorldSpace(node).transform
-                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+                    end
+                    if not cycle then
+                        -- Update local transform
+                        local secondaryTransform = getWorldSpace(secondary).transform
+                        local nodeTransform = getWorldSpace(node).transform
+                        node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                        node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
 
-                            -- Unlink old, link new
-                            local prevParent = node.parentId and share.nodes[node.parentId]
-                            if not (prevParent and otherLocked(prevParent)) then
-                                if prevParent then
-                                    removeFromGroup(prevParent, node)
-                                end
-                                addToGroup(secondary, node)
+                        -- Unlink old, link new
+                        local prevParent = node.parentId and share.nodes[node.parentId]
+                        if not prevParent then
+                            if prevParent then
+                                removeFromGroup(prevParent, node)
                             end
-                        else
-                            print("can't add a node as a child of itself or one of its descendants!")
+                            addToGroup(secondary, node)
                         end
+                    else
+                        print("can't add a node as a child of itself or one of its descendants!")
                     end
                 end
             else
@@ -670,14 +649,12 @@ function client.keypressed(key)
         end
         if not secondary then -- Remove parent
             for id, node in pairs(home.selected) do
-                if not otherLocked(node) then
-                    local prevParent = node.parentId and share.nodes[node.parentId]
-                    if not (prevParent and otherLocked(prevParent)) then
-                        local nodeTransform = getWorldSpace(node).transform
-                        node.x, node.y = nodeTransform:transformPoint(0, 0)
-                        node.rotation = getTransformRotation(nodeTransform)
-                        removeFromGroup(prevParent, node)
-                    end
+                local prevParent = node.parentId and share.nodes[node.parentId]
+                if not prevParent then
+                    local nodeTransform = getWorldSpace(node).transform
+                    node.x, node.y = nodeTransform:transformPoint(0, 0)
+                    node.rotation = getTransformRotation(nodeTransform)
+                    removeFromGroup(prevParent, node)
                 end
             end
         end
@@ -731,208 +708,177 @@ function client.uiupdate()
                 end
                 ui.markdown('---')
 
-                -- Check selection locked
-                local badLock
-                for id, node in pairs(home.selected) do
-                    local lock = otherLocked(node)
-                    if lock then
-                        badLock = lock
-                        break
-                    end
+                for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
+                    uiRow('delete-clone', function()
+                        if ui.button('delete', { kind = 'danger' }) then
+                            deleteSelectedNodes()
+                        end
+                    end, function()
+                        if ui.button('clone') then
+                            cloneSelectedNodes()
+                        end
+                    end)
+                    ui.markdown('---')
+                    break
                 end
 
-                if badLock then -- Selection locked?
-                    local lockMe = share.players[badLock] and share.players[badLock].me
-                    local lockUsername = (lockMe and lockMe.username) or 'unknown'
-                    local lockPhoto = lockMe and lockMe.photoUrl
-                    ui.markdown('🔒 locked by: ')
-                    if lockPhoto then
-                        ui.box('lock-username-photo', { flexDirection = 'row' }, function()
-                            ui.box('lock-photo', { maxWidth = 32 }, function()
-                                ui.image(lockPhoto)
-                            end)
-                            ui.box('lock-username', { flex = 1, marginLeft = 20 }, function()
-                                ui.markdown(lockUsername)
-                            end)
-                        end)
-                    else
-                        ui.markdown(lockUsername)
-                    end
-                else -- Selection not locked...
-                    for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
-                        uiRow('delete-clone', function()
-                            if ui.button('delete', { kind = 'danger' }) then
-                                deleteSelectedNodes()
-                            end
+                for id, node in pairs(home.selected) do
+                    nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
+                        ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
+                            onChange = function(newType)
+                                node[node.type] = nil
+                                node.type = newType
+                                node[node.type] = NODE_TYPE_DEFAULTS[node.type]
+                            end,
+                        })
+
+                        uiRow('position', function()
+                            node.x = ui.numberInput('x', node.x)
                         end, function()
-                            if ui.button('clone') then
-                                cloneSelectedNodes()
+                            node.y = ui.numberInput('y', node.y)
+                        end)
+
+                        uiRow('rotation-depth', function()
+                            ui.numberInput('rotation', node.rotation * 180 / math.pi, {
+                                onChange = function (newVal)
+                                    node.rotation = newVal * math.pi / 180
+                                end
+                            })
+                        end, function()
+                            node.depth = ui.numberInput('depth', node.depth)
+                        end)
+
+                        uiRow('size', function()
+                            node.width = ui.numberInput('width', node.width)
+                        end, function()
+                            node.height = ui.numberInput('height', node.height)
+                        end)
+                    end)
+
+                    if node.type == 'image' then
+                        typeSectionOpen = ui.section('image', { open = typeSectionOpen }, function()
+                            node.image.url = ui.textInput('url', node.image.url)
+
+                            uiRow('smooth-scaling-crop', function()
+                                node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)
+                            end, function()
+                                node.image.crop = ui.toggle('crop', 'crop', node.image.crop)
+                            end)
+
+                            if node.image.crop then
+                                uiRow('crop-xy', function()
+                                    node.image.cropX = ui.numberInput('crop x', node.image.cropX)
+                                end, function()
+                                    node.image.cropY = ui.numberInput('crop y', node.image.cropY)
+                                end)
+                                uiRow('crop-size', function()
+                                    node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
+                                end, function()
+                                    node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
+                                end)
+
+                                if ui.button('reset crop') then
+                                    local image = imageFromUrl(node.image.url)
+                                    if image then
+                                        node.image.cropX, node.image.cropY = 0, 0
+                                        node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
+                                    end
+                                end
                             end
                         end)
-                        ui.markdown('---')
-                        break
                     end
 
-                    for id, node in pairs(home.selected) do
-                        nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
-                            ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
-                                onChange = function(newType)
-                                    node[node.type] = nil
-                                    node.type = newType
-                                    node[node.type] = NODE_TYPE_DEFAULTS[node.type]
-                                end,
-                            })
+                    if node.type == 'text' then
+                        typeSectionOpen = ui.section('text', { open = typeSectionOpen }, function()
+                            node.text.text = ui.textArea('text', node.text.text)
 
-                            uiRow('position', function()
-                                node.x = ui.numberInput('x', node.x)
-                            end, function()
-                                node.y = ui.numberInput('y', node.y)
-                            end)
+                            node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
 
-                            uiRow('rotation-depth', function()
-                                ui.numberInput('rotation', node.rotation * 180 / math.pi, {
-                                    onChange = function (newVal)
-                                        node.rotation = newVal * math.pi / 180
-                                    end
-                                })
-                            end, function()
-                                node.depth = ui.numberInput('depth', node.depth)
-                            end)
+                            node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
+                            node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
 
-                            uiRow('size', function()
-                                node.width = ui.numberInput('width', node.width)
-                            end, function()
-                                node.height = ui.numberInput('height', node.height)
-                            end)
+                            local c = node.text.color
+                            c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                        end)
+                    end
+
+                    if node.type == 'group' then
+                        childrenSectionOpen = ui.section('children', { open = childrenSectionOpen }, function()
+                            for childId in pairs(node.group.childrenIds) do
+                                local child = share.nodes[childId]
+                                if child then
+                                    uiRow('child-' .. childId, function()
+                                        ui.markdown(child.type)
+                                    end, function()
+                                        if ui.button('show') then
+                                            secondaryId = child.id
+                                        end
+                                    end, function()
+                                        if ui.button('unlink') then
+                                            local childTransform = getWorldSpace(child).transform
+                                            child.x, child.y = childTransform:transformPoint(0, 0)
+                                            child.rotation = getTransformRotation(childTransform)
+                                            removeFromGroup(node, child)
+                                        end
+                                    end)
+                                end
+                            end
                         end)
 
-                        if node.type == 'image' then
-                            typeSectionOpen = ui.section('image', { open = typeSectionOpen }, function()
-                                node.image.url = ui.textInput('url', node.image.url)
+                        ui.markdown('---')
 
-                                uiRow('smooth-scaling-crop', function()
-                                    node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)
+                        if ui.button('add rule') then
+                            local newIndex = #node.group.rules + 1
+                            node.group.rules[newIndex] = RULE_COMMON_DEFAULTS
+                            local newRule = node.group.rules[newIndex]
+                            newRule.id = uuid()
+
+                            newRule[newRule.type] = RULE_TYPE_DEFAULTS[newRule.type]
+                        end
+
+                        for i = 1, #node.group.rules do
+                            local rule = node.group.rules[i]
+                            ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRulePhrase(rule), {
+                                id = rule.id,
+                                open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
+                            }, function()
+                                uiRow('event-type', function()
+                                    rule.event = ui.dropdown('event', rule.event, { 'update' })
                                 end, function()
-                                    node.image.crop = ui.toggle('crop', 'crop', node.image.crop)
-                                end)
-
-                                if node.image.crop then
-                                    uiRow('crop-xy', function()
-                                        node.image.cropX = ui.numberInput('crop x', node.image.cropX)
-                                    end, function()
-                                        node.image.cropY = ui.numberInput('crop y', node.image.cropY)
-                                    end)
-                                    uiRow('crop-size', function()
-                                        node.image.cropWidth = ui.numberInput('crop width', node.image.cropWidth)
-                                    end, function()
-                                        node.image.cropHeight = ui.numberInput('crop height', node.image.cropHeight)
-                                    end)
-
-                                    if ui.button('reset crop') then
-                                        local image = imageFromUrl(node.image.url)
-                                        if image then
-                                            node.image.cropX, node.image.cropY = 0, 0
-                                            node.image.cropWidth, node.image.cropHeight = image:getWidth(), image:getHeight()
+                                    ui.dropdown('type', rule.type, { 'code' }, {
+                                        onChange = function(newType)
                                         end
-                                    end
-                                end
-                            end)
-                        end
-
-                        if node.type == 'text' then
-                            typeSectionOpen = ui.section('text', { open = typeSectionOpen }, function()
-                                node.text.text = ui.textArea('text', node.text.text)
-
-                                node.text.fontUrl = ui.textInput('font url', node.text.fontUrl)
-
-                                node.text.fontSize = ui.slider('font size', node.text.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE)
-                                node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(node.text.fontSize, MAX_FONT_SIZE))
-
-                                local c = node.text.color
-                                c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
-                            end)
-                        end
-
-                        if node.type == 'group' then
-                            childrenSectionOpen = ui.section('children', { open = childrenSectionOpen }, function()
-                                for childId in pairs(node.group.childrenIds) do
-                                    local child = share.nodes[childId]
-                                    if child then
-                                        uiRow('child-' .. childId, function()
-                                            ui.markdown(child.type)
-                                        end, function()
-                                            if ui.button('show') then
-                                                secondaryId = child.id
-                                            end
-                                        end, function()
-                                            if ui.button('unlink') then
-                                                if not otherLocked(child) then
-                                                    local childTransform = getWorldSpace(child).transform
-                                                    child.x, child.y = childTransform:transformPoint(0, 0)
-                                                    child.rotation = getTransformRotation(childTransform)
-                                                    removeFromGroup(node, child)
-                                                end
-                                            end
-                                        end)
-                                    end
-                                end
-                            end)
-
-                            ui.markdown('---')
-
-                            if ui.button('add rule') then
-                                local newIndex = #node.group.rules + 1
-                                node.group.rules[newIndex] = RULE_COMMON_DEFAULTS
-                                local newRule = node.group.rules[newIndex]
-                                newRule.id = uuid()
-
-                                newRule[newRule.type] = RULE_TYPE_DEFAULTS[newRule.type]
-                            end
-
-                            for i = 1, #node.group.rules do
-                                local rule = node.group.rules[i]
-                                ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRulePhrase(rule), {
-                                    id = rule.id,
-                                    open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
-                                }, function()
-                                    uiRow('event-type', function()
-                                        rule.event = ui.dropdown('event', rule.event, { 'update' })
-                                    end, function()
-                                        ui.dropdown('type', rule.type, { 'code' }, {
-                                            onChange = function(newType)
-                                            end
-                                        })
-                                    end)
-
-                                    rule.phrase = ui.textInput('phrase', rule.phrase, {
-                                        maxLength = MAX_RULE_PHRASE_LENGTH,
                                     })
-                                    rule.phrase = rule.phrase:sub(1, MAX_RULE_PHRASE_LENGTH)
-
-                                    if rule.type == 'code' then
-                                        local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
-                                        if edit == rule.code.applied then
-                                            rule.code.edited = nil
-                                        else
-                                            rule.code.edited = edit
-                                        end
-                                        uiRow('apply', function()
-                                            if rule.code.edited then
-                                                ui.markdown('edited')
-                                            else
-                                                ui.markdown('applied')
-                                            end
-                                        end, function()
-                                            if rule.code.edited then
-                                                if ui.button('apply') then
-                                                    rule.code.applied = rule.code.edited
-                                                    rule.code.edited = nil
-                                                end
-                                            end
-                                        end)
-                                    end
                                 end)
-                            end
+
+                                rule.phrase = ui.textInput('phrase', rule.phrase, {
+                                    maxLength = MAX_RULE_PHRASE_LENGTH,
+                                })
+                                rule.phrase = rule.phrase:sub(1, MAX_RULE_PHRASE_LENGTH)
+
+                                if rule.type == 'code' then
+                                    local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
+                                    if edit == rule.code.applied then
+                                        rule.code.edited = nil
+                                    else
+                                        rule.code.edited = edit
+                                    end
+                                    uiRow('apply', function()
+                                        if rule.code.edited then
+                                            ui.markdown('edited')
+                                        else
+                                            ui.markdown('applied')
+                                        end
+                                    end, function()
+                                        if rule.code.edited then
+                                            if ui.button('apply') then
+                                                rule.code.applied = rule.code.edited
+                                                rule.code.edited = nil
+                                            end
+                                        end
+                                    end)
+                                end
+                            end)
                         end
                     end
                 end
