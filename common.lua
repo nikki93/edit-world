@@ -3,6 +3,8 @@ cs = require 'https://raw.githubusercontent.com/castle-games/share.lua/623c500de
 uuid = require 'https://raw.githubusercontent.com/Tieske/uuid/75f84281f4c45838f59fc2c6f893fa20e32389b6/src/uuid.lua'
 uuid.seed()
 
+serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb21933f63eb23ece7d60ba2349a8d2848/src/serpent.lua'
+
 
 --- CONSTANTS
 
@@ -90,6 +92,29 @@ end
 
 --- COMMON LOGIC
 
+-- Apply a diff from `:__diff` or `:__flush` to a target `t` that is itself a `state`
+function applyDiff(t, diff)
+    if diff == nil then return t end
+    if diff.__exact then
+        diff.__exact = nil
+        return diff
+    end
+    t = (type(t) == 'table' or type(t) == 'userdata') and t or {}
+    for k, v in pairs(diff) do
+        if type(v) == 'table' then
+            local r = applyDiff(t[k], v)
+            if r ~= t[k] then
+                t[k] = r
+            end
+        elseif v == DIFF_NIL then
+            t[k] = nil
+        else
+            t[k] = v
+        end
+    end
+    return t
+end
+ 
 function getRulePhrase(rule)
     return rule.phrase == '' and RULE_PHRASE_DEFAULTS[rule.type] or rule.phrase
 end

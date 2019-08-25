@@ -166,9 +166,9 @@ function server.update(dt)
                 selected[id] = nil
                 share.nodes[id] = nil
             end
-            for id, node in pairs(selected) do -- Update selecteds, tracking locks
-                share.nodes[id] = node
-            end
+            -- for id, node in pairs(selected) do -- Update selecteds, tracking locks
+            --     share.nodes[id] = node
+            -- end
         end
     end
 
@@ -190,6 +190,30 @@ function server.update(dt)
                             end
                         end
                     end
+                end
+            end
+        end
+    end
+end
+
+
+--- CHANGING
+
+function server.changing(clientId, homeDiff)
+    if homeDiff.selected then -- Selected
+        if homeDiff.__exact or homeDiff.selected.__exact then -- Top-level exact
+            for id, node in pairs(homeDiff.selected) do
+                if id ~= '__exact' then
+                    share.nodes[id] = node
+                end
+            end
+        else -- Merge
+            for id, nodeDiff in pairs(homeDiff.selected) do
+                print(serpent.block(nodeDiff))
+                local node = share.nodes[id]
+                local newNode = applyDiff(node, nodeDiff)
+                if newNode ~= node then
+                    share.nodes[id] = newNode
                 end
             end
         end

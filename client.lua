@@ -482,6 +482,31 @@ function client.update(dt)
 end
 
 
+--- CHANGING
+
+function client.changing(shareDiff)
+    if shareDiff.nodes then -- Nodes
+        if shareDiff.__exact or shareDiff.nodes.__exact then -- Top-level exact
+            for id, node in pairs(shareDiff.nodes) do
+                if id ~= '__exact' and home.selected[id] then
+                    home.selected[id] = node
+                end
+            end
+        else -- Merge
+            for id, nodeDiff in pairs(shareDiff.nodes) do
+                local sel = home.selected[id]
+                if sel then
+                    local newSel = applyDiff(sel, nodeDiff)
+                    if newSel ~= sel then
+                        home.selected[id] = newSel
+                    end
+                end
+            end
+        end
+    end
+end
+
+
 --- MOUSE
 
 function client.mousepressed(x, y, button)
