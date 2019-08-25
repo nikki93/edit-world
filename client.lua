@@ -183,6 +183,8 @@ end
 
 --- DRAW
 
+local defaultImage = love.graphics.newImage('checkerboard.png')
+
 local imageFromUrl
 do
     local cache = {} -- url -> { image = image }
@@ -195,7 +197,7 @@ do
                 cached.image = love.graphics.newImage(url)
             end)
         end
-        return cached.image
+        return cached.image or defaultImage
     end
 end
 
