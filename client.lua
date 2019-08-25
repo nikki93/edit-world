@@ -644,12 +644,10 @@ function client.keypressed(key)
 
                         -- Unlink old, link new
                         local prevParent = node.parentId and share.nodes[node.parentId]
-                        if not prevParent then
-                            if prevParent then
-                                removeFromGroup(prevParent, node)
-                            end
-                            addToGroup(secondary, node)
+                        if prevParent then
+                            removeFromGroup(prevParent, node)
                         end
+                        addToGroup(secondary, node)
                     else
                         print("can't add a node as a child of itself or one of its descendants!")
                     end
@@ -661,12 +659,10 @@ function client.keypressed(key)
         if not secondary then -- Remove parent
             for id, node in pairs(home.selected) do
                 local prevParent = node.parentId and share.nodes[node.parentId]
-                if not prevParent then
-                    local nodeTransform = getWorldSpace(node).transform
-                    node.x, node.y = nodeTransform:transformPoint(0, 0)
-                    node.rotation = getTransformRotation(nodeTransform)
-                    removeFromGroup(prevParent, node)
-                end
+                local nodeTransform = getWorldSpace(node).transform
+                node.x, node.y = nodeTransform:transformPoint(0, 0)
+                node.rotation = getTransformRotation(nodeTransform)
+                removeFromGroup(prevParent, node)
             end
         end
     end

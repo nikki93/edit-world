@@ -27,7 +27,7 @@ NODE_COMMON_DEFAULTS = {
 
 NODE_TYPE_DEFAULTS = {
     image = {
-        url = 'https://castle.games/static/logo.png',
+        url = 'https://github.com/nikki93/edit-world/raw/66e4850578fd46cbb9f3c1db30611981f26906e5/checkerboard.png',
         smoothScaling = true,
         crop = false,
         cropX = 0,
