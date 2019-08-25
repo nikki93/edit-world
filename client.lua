@@ -703,6 +703,10 @@ local function uiRow(id, ...)
     end)
 end
 
+local function uiSpacer()
+    ui.box('spacer', { height = 40 }, function() end)
+end
+
 local nodeSectionOpen = true
 local typeSectionOpen = true
 local childrenSectionOpen = false
@@ -712,24 +716,27 @@ function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
             ui.tab('nodes', function()
-                if ui.button('new') then
-                    newNode()
-                end
-                ui.markdown('---')
-
-                for id, node in pairs(home.selected) do -- Hack to only do this when non-empty selection
-                    uiRow('delete-clone', function()
-                        if ui.button('delete', { kind = 'danger' }) then
-                            deleteSelectedNodes()
-                        end
-                    end, function()
-                        if ui.button('clone') then
-                            cloneSelectedNodes()
-                        end
-                    end)
-                    ui.markdown('---')
+                local selectionEmpty = true
+                for id, node in pairs(home.selected) do
+                    selectionEmpty = false
                     break
                 end
+
+                uiRow('top-bar', function()
+                    if ui.button('new') then
+                        newNode()
+                    end
+                end, function()
+                    if not selectionEmpty and ui.button('delete', { kind = 'danger' }) then
+                        deleteSelectedNodes()
+                    end
+                end, function()
+                    if not selectionEmpty and ui.button('clone') then
+                        cloneSelectedNodes()
+                    end
+                end)
+
+                ui.markdown('---')
 
                 for id, node in pairs(home.selected) do
                     nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
@@ -842,7 +849,7 @@ function client.uiupdate()
                             local newRule = node.group.rules[newIndex]
                             newRule.id = uuid()
 
-                            newRule[newRule.type] = RULE_TYPE_DEFAULTS[newRule.type]
+                            newRule[newRule.action] = RULE_ACTION_DEFAULTS[newRule.action]
                         end
 
                         for i = 1, #node.group.rules do
@@ -851,11 +858,14 @@ function client.uiupdate()
                                 id = rule.id,
                                 open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
                             }, function()
-                                uiRow('event-type', function()
+                                uiRow('event-action', function()
                                     rule.event = ui.dropdown('event', rule.event, { 'update' })
                                 end, function()
-                                    ui.dropdown('type', rule.type, { 'code' }, {
-                                        onChange = function(newType)
+                                    ui.dropdown('action', rule.action, { 'code' }, {
+                                        onChange = function(newAction)
+                                            rule[rule.action] = nil
+                                            rule.action = newAction
+                                            rule[rule.action] = RULE_ACTION_DEFAULTS[rule.action]
                                         end
                                     })
                                 end)
@@ -865,7 +875,7 @@ function client.uiupdate()
                                 })
                                 rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
 
-                                if rule.type == 'code' then
+                                if rule.action == 'code' then
                                     local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
                                     if edit == rule.code.applied then
                                         rule.code.edited = nil
@@ -907,7 +917,7 @@ function client.uiupdate()
                     end
                 })
 
-                ui.box('spacer', { height = 40 }, function() end)
+                uiSpacer()
 
                 if ui.button('post world!') then
                     network.async(function()

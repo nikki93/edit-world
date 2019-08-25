@@ -54,11 +54,11 @@ SETTINGS_DEFAULTS = {
 
 RULE_COMMON_DEFAULTS = {
     event = 'update',
-    type = 'code',
+    action = 'code',
     description = '',
 }
 
-RULE_TYPE_DEFAULTS = {
+RULE_ACTION_DEFAULTS = {
     code = {
         edited = nil,
         applied = '',
@@ -91,7 +91,7 @@ end
 --- COMMON LOGIC
 
 function getRuleDescription(rule)
-    return rule.description == '' and RULE_DESCRIPTION_DEFAULTS[rule.type] or rule.description
+    return rule.description == '' and RULE_DESCRIPTION_DEFAULTS[rule.action] or rule.description
 end
 
 do
@@ -121,7 +121,7 @@ function runUpdateRules(node, dt)
     if node.type == 'group' then
         for _, rule in pairs(node.group.rules) do
             if rule.event == 'update' then
-                if rule.type == 'code' then
+                if rule.action == 'code' then
                     local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
                     local compiled = compileCode(fullCode, getRuleDescription(rule))
                     if compiled then
