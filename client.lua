@@ -854,7 +854,7 @@ function client.uiupdate()
 
                         for i = 1, #node.group.rules do
                             local rule = node.group.rules[i]
-                            ruleSectionOpen[rule.id] = ui.section('on ' .. rule.event .. ', ' .. getRuleDescription(rule), {
+                            ruleSectionOpen[rule.id] = ui.section(rule.event .. ': ' .. getRuleDescription(rule), {
                                 id = rule.id,
                                 open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
                             }, function()
