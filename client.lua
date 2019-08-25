@@ -142,6 +142,8 @@ end
 
 --- LOAD
 
+local mode = 'none'
+
 local theQuad
 
 local secondaryId
@@ -351,10 +353,67 @@ function client.draw()
             end
         end)
 
-        love.graphics.stacked('all', function()
-            love.graphics.setColor(0, 0, 0)
-            love.graphics.setFont(defaultFont)
-            love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
+        love.graphics.stacked('all', function() -- Bottom bar
+            local lightViolet = { 0.882, 0.824, 0.965 }
+            local darkViolet = { 0.722, 0.58, 0.914 }
+            local white = { 1, 1, 1 }
+
+            local background = lightViolet
+            local separator = darkViolet
+            local textColor = white
+
+            local screenW, screenH = love.graphics.getDimensions()
+            local fontH = defaultFont:getHeight()
+            local pad = 4
+            local separatorW = 4
+
+            local barH = fontH + 2 * pad
+
+            love.graphics.translate(0, screenH - barH)
+            love.graphics.setColor(background)
+            love.graphics.rectangle('fill', 0, 0, screenW, barH)
+
+            local left, right = 0, screenW
+
+            local function leftText(text)
+                local textW = defaultFont:getWidth(text)
+                local blockW = textW + 2 * pad
+                love.graphics.setColor(separator)
+                love.graphics.rectangle('fill', left, 0, blockW, barH)
+                love.graphics.setColor(textColor)
+                love.graphics.print(text, left + pad, pad)
+                left = left + blockW + separatorW
+            end
+
+            local function rightText(text)
+                local textW = defaultFont:getWidth(text)
+                local blockW = textW + 2 * pad
+                love.graphics.setColor(separator)
+                love.graphics.rectangle('fill', right - blockW, 0, blockW, barH)
+                love.graphics.setColor(textColor)
+                love.graphics.print(text, right - blockW + pad, pad)
+                right = right - blockW - separatorW
+            end
+
+            if mode ~= 'none' then
+                leftText(mode)
+            end
+
+            do
+                local selectCount = 0
+                for id, node in pairs(home.selected) do
+                    selectCount = selectCount + 1
+                end
+                if selectCount >= 1 then
+                    leftText('select ' .. selectCount)
+                end
+            end
+
+            if secondaryId then
+                leftText('secondary 1')
+            end
+
+            rightText('fps ' .. love.timer.getFPS())
         end)
     else -- Not connected
         love.graphics.print('connecting...', 20, 20)
@@ -363,8 +422,6 @@ end
 
 
 --- UPDATE
-
-local mode = 'none'
 
 local prevMouseWX, prevMouseWY
 local prevMouseDown = { false, false }
