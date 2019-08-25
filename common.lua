@@ -106,30 +106,50 @@ do
         local cached = cache[code]
         if not cached then
             cached = {}
+            cache[code] = cached
             local chunk, err = load(code, desc, 't', env)
             if chunk then
                 cached.func = chunk()
             else
-                print(err)
+                cached.err = err
             end
         end
-        return cached.func
+        return cached.func, cached.err
     end
 end
 
-function runUpdateRules(node, dt)
-    if node.type == 'group' then
-        for _, rule in pairs(node.group.rules) do
-            if rule.event == 'update' then
-                if rule.action == 'code' then
-                    local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
-                    local compiled = compileCode(fullCode, getRuleDescription(rule))
-                    if compiled then
-                        local succeeded, err = pcall(function()
-                            compiled(node, dt)
-                        end)
-                        if not succeeded then
-                            print(err)
+do
+    local cache = {}
+
+    local lastErrPrintTime = {}
+
+    function runUpdateRules(node, dt)
+        if node.type == 'group' then
+            for i = 1, #node.group.rules do
+                local rule = node.group.rules[i]
+                if rule.event == 'update' then
+                    if rule.action == 'code' then
+                        local err
+
+                        local cached = cache[rule.code.applied]
+                        if not cached then
+                            cached = {}
+                            cache[rule.code.applied] = cached
+                            local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
+                            cached.compiled, err = compileCode(fullCode, getRuleDescription(rule))
+                        end
+                        local compiled = cached.compiled
+                        if compiled then
+                            local succeeded
+                            succeeded, err = pcall(compiled, node, dt)
+                        end
+
+                        if err then
+                            local time = love.timer.getTime()
+                            if not lastErrPrintTime[err] or time - lastErrPrintTime[err] > 1 then
+                                print(err)
+                                lastErrPrintTime[err] = time
+                            end
                         end
                     end
                 end
