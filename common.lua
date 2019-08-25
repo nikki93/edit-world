@@ -97,10 +97,14 @@ end
 do
     local cache = {}
 
-    local env = {
+    local env = setmetatable({
         string = string,
         math = math,
-    }
+    }, {
+        __newindex = function(t, k)
+            error("global variable '" .. k .. "' not allowed!")
+        end,
+    })
 
     function compileCode(code, desc)
         local cached = cache[code]
