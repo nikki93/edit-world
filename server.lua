@@ -119,30 +119,6 @@ end
 
 --- UPDATE
 
-local compile
-do
-    local cache = {}
-
-    local env = {
-        string = string,
-        math = math,
-    }
-
-    function compile(code, desc)
-        local cached = cache[code]
-        if not cached then
-            cached = {}
-            local chunk, err = load(code, desc, 't', env)
-            if chunk then
-                cached.func = chunk()
-            else
-                print(err)
-            end
-        end
-        return cached.func
-    end
-end
-
 function server.update(dt)
     do -- Player mes
         for clientId, player in pairs(share.players) do
@@ -172,26 +148,9 @@ function server.update(dt)
         end
     end
 
-    do -- Rules
+    do -- Run update rules
         for id, node in pairs(share.nodes) do
-            if node.type == 'group' then
-                for _, rule in pairs(node.group.rules) do
-                    if rule.event == 'update' then
-                        if rule.type == 'code' then
-                            local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
-                            local compiled = compile(fullCode, getRulePhrase(rule))
-                            if compiled then
-                                local succeeded, err = pcall(function()
-                                    compiled(node, dt)
-                                end)
-                                if not succeeded then
-                                    print(err)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
+            runUpdateRules(node, dt)
         end
     end
 end

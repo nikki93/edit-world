@@ -93,3 +93,47 @@ end
 function getRulePhrase(rule)
     return rule.phrase == '' and RULE_PHRASE_DEFAULTS[rule.type] or rule.phrase
 end
+
+do
+    local cache = {}
+
+    local env = {
+        string = string,
+        math = math,
+    }
+
+    function compileCode(code, desc)
+        local cached = cache[code]
+        if not cached then
+            cached = {}
+            local chunk, err = load(code, desc, 't', env)
+            if chunk then
+                cached.func = chunk()
+            else
+                print(err)
+            end
+        end
+        return cached.func
+    end
+end
+
+function runUpdateRules(node, dt)
+    if node.type == 'group' then
+        for _, rule in pairs(node.group.rules) do
+            if rule.event == 'update' then
+                if rule.type == 'code' then
+                    local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
+                    local compiled = compileCode(fullCode, getRulePhrase(rule))
+                    if compiled then
+                        local succeeded, err = pcall(function()
+                            compiled(node, dt)
+                        end)
+                        if not succeeded then
+                            print(err)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end

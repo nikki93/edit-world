@@ -439,6 +439,15 @@ function client.update(dt)
             end
         end
 
+        do -- Run update rules
+            for id, node in pairs(share.nodes) do
+                runUpdateRules(node, dt)
+            end
+            for id, node in pairs(home.selected) do
+                runUpdateRules(node, dt)
+            end
+        end
+
         if mode == 'grab' then -- Grab
             for id, node in pairs(home.selected) do
                 local transform = getParentWorldSpace(node).transform
