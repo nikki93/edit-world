@@ -16,13 +16,13 @@ MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 72
 
 NODE_COMMON_DEFAULTS = {
     type = 'image',
+    parentId = nil,
     x = 0,
     y = 0,
     rotation = 0,
     depth = 0,
     width = 4 * G,
     height = 4 * G,
-    parentId = nil,
 }
 
 NODE_TYPE_DEFAULTS = {

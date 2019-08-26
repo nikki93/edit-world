@@ -115,6 +115,7 @@ local function cloneSelectedNodes(node)
         local newId = uuid()
         local newNode = cloneValue(node)
         newNode.id = newId
+        newNode.parentId = nil
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
         if newNode.type == 'group' then
             newNode.group.childrenIds = {}
