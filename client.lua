@@ -150,12 +150,16 @@ local secondaryId
 
 local defaultFont
 
+local defaultImage
+
 function client.load()
     cameraX, cameraY = 0, 0
 
     theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 
     defaultFont = love.graphics.newFont(14)
+    
+    defaultImage = love.graphics.newImage('checkerboard.png')
 end
 
 
@@ -184,8 +188,6 @@ end
 
 
 --- DRAW
-
-local defaultImage = love.graphics.newImage('checkerboard.png')
 
 local imageFromUrl
 do
