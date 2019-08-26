@@ -503,12 +503,14 @@ function client.update(dt)
 
         do -- Run update rules
             for id, node in pairs(share.nodes) do
-                runUpdateRules(node, dt, function(id)
-                    return home.selected[id] or share.nodes[id]
-                end)
+                if not home.selected[id] then
+                    runUpdateRules(node, function(id)
+                        return home.selected[id] or share.nodes[id]
+                    end)
+                end
             end
             for id, node in pairs(home.selected) do
-                runUpdateRules(node, dt, function(id)
+                runUpdateRules(node, function(id)
                     return home.selected[id] or share.nodes[id]
                 end)
             end

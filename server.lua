@@ -150,7 +150,7 @@ function server.update(dt)
 
     do -- Run update rules
         for id, node in pairs(share.nodes) do
-            runUpdateRules(node, dt, function(id)
+            runUpdateRules(node, function(id)
                 return share.nodes[id]
             end)
         end
