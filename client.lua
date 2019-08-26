@@ -911,12 +911,12 @@ function client.uiupdate()
 
                         for i = 1, #node.group.rules do
                             local rule = node.group.rules[i]
-                            ruleSectionOpen[rule.id] = ui.section(rule.event .. ': ' .. getRuleDescription(rule), {
+                            ruleSectionOpen[rule.id] = ui.section(rule.kind .. ': ' .. getRuleDescription(rule), {
                                 id = rule.id,
                                 open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
                             }, function()
-                                uiRow('event-action', function()
-                                    rule.event = ui.dropdown('event', rule.event, { 'update' })
+                                uiRow('kind-action', function()
+                                    rule.kind = ui.dropdown('kind', rule.kind, { 'think' })
                                 end, function()
                                     ui.dropdown('action', rule.action, { 'code' }, {
                                         onChange = function(newAction)
@@ -927,10 +927,19 @@ function client.uiupdate()
                                     })
                                 end)
 
-                                rule.description = ui.textInput('description', rule.description, {
-                                    maxLength = MAX_RULE_DESCRIPTION_LENGTH,
-                                })
-                                rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
+                                ui.box('enabled-etc', { flexDirection = 'row', alignItems = 'center' }, function()
+                                    ui.box('enabled', { width = 100 }, function()
+                                        rule.enabled = ui.toggle('rule off', 'rule on', rule.enabled)
+                                    end)
+
+                                    ui.box('description', { flex = 1 }, function()
+                                        rule.description = ui.textInput('description', rule.description, {
+                                            maxLength = MAX_RULE_DESCRIPTION_LENGTH,
+                                        })
+                                        rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
+                                    end)
+                                end)
+
 
                                 if rule.action == 'code' then
                                     local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})

@@ -53,7 +53,8 @@ SETTINGS_DEFAULTS = {
 }
 
 RULE_COMMON_DEFAULTS = {
-    event = 'update',
+    enabled = false,
+    kind = 'think',
     action = 'code',
     description = '',
 }
@@ -131,7 +132,7 @@ do
         if node.type == 'group' then
             for i = 1, #node.group.rules do
                 local rule = node.group.rules[i]
-                if rule.event == 'update' then
+                if rule.enabled and rule.kind == 'think' then
                     if rule.action == 'code' then
                         local err
 
