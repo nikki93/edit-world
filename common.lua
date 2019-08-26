@@ -99,9 +99,10 @@ do
     local cache = {}
 
     local env = setmetatable({
-        string = string,
-        math = math,
+        -- string = string,
+        -- math = math,
     }, {
+        __index = _G,
         __newindex = function(t, k)
             error("global variable '" .. k .. "' not allowed!")
         end,
@@ -128,7 +129,23 @@ do
 
     local lastErrPrintTime = {}
 
-    function runUpdateRules(node, dt)
+    local function childrenIterator(node, getNodeWithId)
+        local childrenTable = node.group.childrenIds
+        if type(childrenTable) ~= 'table' then
+            childrenTable = childrenTable:__table()
+        end
+        local currId
+        return function()
+            return function()
+                currId = next(childrenTable, currId)
+                if currId then
+                    return getNodeWithId(currId)
+                end
+            end
+        end
+    end
+
+    function runUpdateRules(node, dt, getNodeWithId)
         if node.type == 'group' then
             for i = 1, #node.group.rules do
                 local rule = node.group.rules[i]
@@ -140,13 +157,13 @@ do
                         if not cached then
                             cached = {}
                             cache[rule.code.applied] = cached
-                            local fullCode = 'return function(self, dt)\n' .. rule.code.applied .. '\nend'
+                            local fullCode = 'return function(self, children, dt)\n' .. rule.code.applied .. '\nend'
                             cached.compiled, err = compileCode(fullCode, getRuleDescription(rule))
                         end
                         local compiled = cached.compiled
                         if compiled then
                             local succeeded
-                            succeeded, err = pcall(compiled, node, dt)
+                            succeeded, err = pcall(compiled, node, childrenIterator(node, getNodeWithId), dt)
                         end
 
                         if err then

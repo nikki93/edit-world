@@ -502,10 +502,14 @@ function client.update(dt)
 
         do -- Run update rules
             for id, node in pairs(share.nodes) do
-                runUpdateRules(node, dt)
+                runUpdateRules(node, dt, function(id)
+                    return home.selected[id] or share.nodes[id]
+                end)
             end
             for id, node in pairs(home.selected) do
-                runUpdateRules(node, dt)
+                runUpdateRules(node, dt, function(id)
+                    return home.selected[id] or share.nodes[id]
+                end)
             end
         end
 
@@ -766,7 +770,6 @@ end
 
 local nodeSectionOpen = true
 local typeSectionOpen = true
-local childrenSectionOpen = false
 local ruleSectionOpen = {}
 
 function client.uiupdate()
@@ -876,95 +879,99 @@ function client.uiupdate()
                     end
 
                     if node.type == 'group' then
-                        childrenSectionOpen = ui.section('children', { open = childrenSectionOpen }, function()
-                            for childId in pairs(node.group.childrenIds) do
-                                local child = share.nodes[childId]
-                                if child then
-                                    uiRow('child-' .. childId, function()
-                                        ui.markdown(child.type)
-                                    end, function()
-                                        if ui.button('show') then
-                                            secondaryId = child.id
-                                        end
-                                    end, function()
-                                        if ui.button('unlink') then
-                                            local childTransform = getWorldSpace(child).transform
-                                            child.x, child.y = childTransform:transformPoint(0, 0)
-                                            child.rotation = getTransformRotation(childTransform)
-                                            removeFromGroup(node, child)
-                                        end
-                                    end)
-                                end
-                            end
-                        end)
-
                         ui.markdown('---')
 
-                        if ui.button('add rule') then
-                            local newIndex = #node.group.rules + 1
-                            node.group.rules[newIndex] = RULE_COMMON_DEFAULTS
-                            local newRule = node.group.rules[newIndex]
-                            newRule.id = uuid()
+                        ui.tabs('group tabs', function()
+                            ui.tab('rules', function()
+                                if ui.button('add rule') then
+                                    local newIndex = #node.group.rules + 1
+                                    node.group.rules[newIndex] = RULE_COMMON_DEFAULTS
+                                    local newRule = node.group.rules[newIndex]
+                                    newRule.id = uuid()
 
-                            newRule[newRule.action] = RULE_ACTION_DEFAULTS[newRule.action]
-                        end
+                                    newRule[newRule.action] = RULE_ACTION_DEFAULTS[newRule.action]
+                                end
 
-                        for i = 1, #node.group.rules do
-                            local rule = node.group.rules[i]
-                            ruleSectionOpen[rule.id] = ui.section(rule.kind .. ': ' .. getRuleDescription(rule), {
-                                id = rule.id,
-                                open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
-                            }, function()
-                                uiRow('kind-action', function()
-                                    rule.kind = ui.dropdown('kind', rule.kind, { 'think' })
-                                end, function()
-                                    ui.dropdown('action', rule.action, { 'code' }, {
-                                        onChange = function(newAction)
-                                            rule[rule.action] = nil
-                                            rule.action = newAction
-                                            rule[rule.action] = RULE_ACTION_DEFAULTS[rule.action]
-                                        end
-                                    })
-                                end)
+                                for i = 1, #node.group.rules do
+                                    local rule = node.group.rules[i]
+                                    ruleSectionOpen[rule.id] = ui.section(rule.kind .. ': ' .. getRuleDescription(rule), {
+                                        id = rule.id,
+                                        open = ruleSectionOpen[rule.id] == nil and true or ruleSectionOpen[rule.id],
+                                    }, function()
+                                        uiRow('kind-action', function()
+                                            rule.kind = ui.dropdown('kind', rule.kind, { 'think' })
+                                        end, function()
+                                            ui.dropdown('action', rule.action, { 'code' }, {
+                                                onChange = function(newAction)
+                                                    rule[rule.action] = nil
+                                                    rule.action = newAction
+                                                    rule[rule.action] = RULE_ACTION_DEFAULTS[rule.action]
+                                                end
+                                            })
+                                        end)
 
-                                ui.box('enabled-etc', { flexDirection = 'row', alignItems = 'center' }, function()
-                                    ui.box('enabled', { width = 104, justifyContent = 'center' }, function()
-                                        rule.enabled = ui.toggle('rule off', 'rule on', rule.enabled)
-                                    end)
+                                        ui.box('enabled-etc', { flexDirection = 'row', alignItems = 'center' }, function()
+                                            ui.box('enabled', { width = 104, justifyContent = 'center' }, function()
+                                                rule.enabled = ui.toggle('rule off', 'rule on', rule.enabled)
+                                            end)
 
-                                    ui.box('description', { flex = 1 }, function()
-                                        rule.description = ui.textInput('description', rule.description, {
-                                            maxLength = MAX_RULE_DESCRIPTION_LENGTH,
-                                        })
-                                        rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
-                                    end)
-                                end)
+                                            ui.box('description', { flex = 1 }, function()
+                                                rule.description = ui.textInput('description', rule.description, {
+                                                    maxLength = MAX_RULE_DESCRIPTION_LENGTH,
+                                                })
+                                                rule.description = rule.description:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
+                                            end)
+                                        end)
 
 
-                                if rule.action == 'code' then
-                                    local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
-                                    if edit == rule.code.applied then
-                                        rule.code.edited = nil
-                                    else
-                                        rule.code.edited = edit
-                                    end
-                                    uiRow('apply', function()
-                                        if rule.code.edited then
-                                            ui.markdown('edited')
-                                        else
-                                            ui.markdown('applied')
-                                        end
-                                    end, function()
-                                        if rule.code.edited then
-                                            if ui.button('apply') then
-                                                rule.code.applied = rule.code.edited
+                                        if rule.action == 'code' then
+                                            local edit = ui.codeEditor('code', rule.code.edited or rule.code.applied, {})
+                                            if edit == rule.code.applied then
                                                 rule.code.edited = nil
+                                            else
+                                                rule.code.edited = edit
                                             end
+                                            uiRow('apply', function()
+                                                if rule.code.edited then
+                                                    ui.markdown('edited')
+                                                else
+                                                    ui.markdown('applied')
+                                                end
+                                            end, function()
+                                                if rule.code.edited then
+                                                    if ui.button('apply') then
+                                                        rule.code.applied = rule.code.edited
+                                                        rule.code.edited = nil
+                                                    end
+                                                end
+                                            end)
                                         end
                                     end)
                                 end
                             end)
-                        end
+
+                            ui.tab('children', function()
+                                for childId in pairs(node.group.childrenIds) do
+                                    local child = share.nodes[childId]
+                                    if child then
+                                        uiRow('child-' .. childId, function()
+                                            ui.markdown(child.type)
+                                        end, function()
+                                            if ui.button('show') then
+                                                secondaryId = child.id
+                                            end
+                                        end, function()
+                                            if ui.button('unlink') then
+                                                local childTransform = getWorldSpace(child).transform
+                                                child.x, child.y = childTransform:transformPoint(0, 0)
+                                                child.rotation = getTransformRotation(childTransform)
+                                                removeFromGroup(node, child)
+                                            end
+                                        end)
+                                    end
+                                end
+                            end)
+                        end)
                     end
                 end
             end)
