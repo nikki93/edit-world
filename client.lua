@@ -928,7 +928,7 @@ function client.uiupdate()
                                 end)
 
                                 ui.box('enabled-etc', { flexDirection = 'row', alignItems = 'center' }, function()
-                                    ui.box('enabled', { width = 100 }, function()
+                                    ui.box('enabled', { width = 104, justifyContent = 'center' }, function()
                                         rule.enabled = ui.toggle('rule off', 'rule on', rule.enabled)
                                     end)
 

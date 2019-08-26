@@ -53,7 +53,7 @@ SETTINGS_DEFAULTS = {
 }
 
 RULE_COMMON_DEFAULTS = {
-    enabled = false,
+    enabled = true,
     kind = 'think',
     action = 'code',
     description = '',
