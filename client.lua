@@ -128,7 +128,6 @@ local function addToGroup(parent, child)
     if child.parentId ~= parent.id and parent.type == 'group' then
         child.parentId = parent.id
         parent.group.childrenIds[child.id] = true
-        client.send('addToGroup', parent.id, child.id)
     end
 end
 
@@ -136,7 +135,6 @@ local function removeFromGroup(parent, child)
     if child.parentId == parent.id then
         child.parentId = nil
         parent.group.childrenIds[child.id] = nil
-        client.send('removeFromGroup', parent.id, child.id)
     end
 end
 

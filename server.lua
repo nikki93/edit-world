@@ -96,28 +96,6 @@ function server.receive(clientId, msg, ...)
             end
         end
     end
-
-    if msg == 'addToGroup' then
-        local parentId, childId = ...
-        local parent, child = share.nodes[parentId], share.nodes[childId]
-        if parent and child then
-            if child.parentId ~= parent.id and parent.type == 'group' then
-                child.parentId = parent.id
-                parent.group.childrenIds[child.id] = true
-            end
-        end
-    end
-
-    if msg == 'removeFromGroup' then
-        local parentId, childId = ...
-        local parent, child = share.nodes[parentId], share.nodes[childId]
-        if parent and child then
-            if child.parentId == parent.id then
-                child.parentId = nil
-                parent.group.childrenIds[child.id] = nil
-            end
-        end
-    end
 end
 
 
@@ -139,23 +117,51 @@ function server.update(dt)
         end
     end
 
-    do -- Edits, deletions, locks
-        for id, clientId in pairs(share.locks) do -- Lock releases
-            local home = homes[clientId]
-            if not (home and home.selected and home.selected[id]) then
+    do -- Edits, deletions, locks, parenting
+        local oldParentIds, newParentIds = {}, {}
+        for clientId in pairs(share.players) do -- Deletions
+            if homes[clientId].deleted then
+                for id in pairs(homes[clientId].deleted) do
+                    if share.locks[id] == clientId and share.nodes[id] then -- Check lock
+                        oldParentIds[id] = share.nodes[id].parentId -- Track unparent
+                        share.nodes[id] = nil
+                    end
+                end
+            end
+        end
+        for id, clientId in pairs(share.locks) do -- Release locks
+            if not (homes[clientId] and homes[clientId].selected and homes[clientId].selected[id]) then
                 share.locks[id] = nil
             end
         end
-        for clientId in pairs(share.players) do
-            local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
-            for id in pairs(deleted) do -- Remove deleteds
-                share.nodes[id] = nil
-            end
-            for id, node in pairs(selected) do -- Apply edits, respecting locks and tracking lock acquisitions
-                if not share.locks[id] or share.locks[id] == clientId then
-                    share.locks[id] = clientId
-                    share.nodes[id] = node
+        for clientId in pairs(share.players) do -- Edits
+            if homes[clientId].selected then
+                for id, node in pairs(homes[clientId].selected) do
+                    if not share.locks[id] then -- Acquire lock
+                        share.locks[id] = clientId
+                    end
+                    if share.locks[id] == clientId then -- Check lock
+                        if share.nodes[id] and share.nodes[id].parentId ~= node.parentId then -- Track reparent
+                            oldParentIds[id] = share.nodes[id].parentId
+                            newParentIds[id] = node.parentId
+                        end
+                        share.nodes[id] = node -- Apply edits
+                    end
                 end
+            end
+        end
+        for childId, oldParentId in pairs(oldParentIds) do -- Apply unparents
+            local oldParent = share.nodes[oldParentId]
+            if oldParent and oldParent.type == 'group' then
+                oldParent.group.childrenIds[childId] = nil
+            end
+        end
+        for childId, newParentId in pairs(newParentIds) do -- Apply parents
+            local newParent = share.nodes[newParentId]
+            if newParent and newParent.type == 'group' then
+                newParent.group.childrenIds[childId] = true
+            else
+                share.nodes[childId].parentId = nil
             end
         end
     end
