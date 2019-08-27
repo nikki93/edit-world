@@ -799,6 +799,39 @@ function client.uiupdate()
                     end
                 end)
 
+                local conflictingLock = nil
+                for id, node in pairs(home.selected) do
+                    local lock = share.locks[id]
+                    if lock ~= client.id then
+                        conflictingLock = lock
+                    end
+                end
+
+                if conflictingLock then
+                    ui.markdown('---')
+
+                    local player = share.players[conflictingLock]
+                    if player and player.me and player.me.username then
+                        if player.me.photoUrl then
+                            ui.box('lock-description', { flexDirection = 'row' }, function()
+                                ui.box('locked-by', { marginRight = 10, justifyContent = 'center' }, function()
+                                    ui.markdown('🔒 locked by')
+                                end)
+                                ui.box('lock-photo', { maxWidth = 16, maxHeight = 16, justifyContent = 'center' }, function()
+                                    ui.image(player.me.photoUrl)
+                                end)
+                                ui.box('lock-username', { flex = 1, marginLeft = '8px', justifyContent = 'center' }, function()
+                                    ui.markdown(player.me.username)
+                                end)
+                            end)
+                        else
+                            ui.markdown('🔒 locked by ' .. player.username)
+                        end
+                    else
+                        ui.markdown('🔒 locked by unknown')
+                    end
+                end
+
                 ui.markdown('---')
 
                 for id, node in pairs(home.selected) do

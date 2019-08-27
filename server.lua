@@ -33,6 +33,10 @@ function server.load()
     do -- Nodes
         share.nodes = {}
     end
+
+    do -- Locks
+        share.locks = {}
+    end
 end
 
 
@@ -135,15 +139,23 @@ function server.update(dt)
         end
     end
 
-    do -- Edits
+    do -- Edits, deletions, locks
+        for id, clientId in pairs(share.locks) do -- Lock releases
+            local home = homes[clientId]
+            if not (home and home.selected and home.selected[id]) then
+                share.locks[id] = nil
+            end
+        end
         for clientId in pairs(share.players) do
             local selected, deleted = homes[clientId].selected or {}, homes[clientId].deleted or {}
-            for id in pairs(deleted) do -- Remove deleteds, tracking name changes
-                selected[id] = nil
+            for id in pairs(deleted) do -- Remove deleteds
                 share.nodes[id] = nil
             end
-            for id, node in pairs(selected) do -- Update selecteds, tracking locks
-                share.nodes[id] = node
+            for id, node in pairs(selected) do -- Apply edits, respecting locks and tracking lock acquisitions
+                if not share.locks[id] or share.locks[id] == clientId then
+                    share.locks[id] = clientId
+                    share.nodes[id] = node
+                end
             end
         end
     end
