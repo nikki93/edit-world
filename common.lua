@@ -302,7 +302,7 @@ do
 
     local lastErrPrintTime = {}
 
-    function runUpdateRules(node, getNodeWithId)
+    function runThinkRules(node, getNodeWithId)
         local dt = love.timer.getDelta()
 
         if node.type == 'group' then
