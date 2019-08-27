@@ -103,8 +103,33 @@ local function newNode()
     newNode.x, newNode.y = cameraX, cameraY
 end
 
+local function addToGroup(parent, child)
+    if parent.type == 'group' then
+        child.parentId = parent.id
+        parent.group.childrenIds[child.id] = true
+    end
+end
+
+local function removeFromGroup(parent, child)
+    if child.parentId == parent.id then
+        child.parentId = nil
+        parent.group.childrenIds[child.id] = nil
+    end
+end
+
 local function deleteSelectedNodes()
     for id, node in pairs(home.selected) do
+        local hasChildren = false
+        if node.type == 'group' then
+            for childId in pairs(node.group.childrenIds) do
+                hasChildren = true
+                break
+            end
+        end
+        if hasChildren then -- Shallow delete only for now
+            print("can't delete a group that has children -- you must either detach or delete the children first!")
+            return
+        end
         home.deleted[node.id] = true
         home.selected[node.id] = nil
     end
@@ -115,26 +140,14 @@ local function cloneSelectedNodes(node)
         local newId = uuid()
         local newNode = cloneValue(node)
         newNode.id = newId
-        newNode.parentId = nil
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
-        if newNode.type == 'group' then
+        if newNode.type == 'group' then -- Shallow clone only for now
             newNode.group.childrenIds = {}
         end
+        if newNode.parentId then
+            addToGroup(home.selected[newNode.parentId] or share.nodes[newNode.parentId], newNode) 
+        end
         home.selected = { [newId] = newNode }
-    end
-end
-
-local function addToGroup(parent, child)
-    if child.parentId ~= parent.id and parent.type == 'group' then
-        child.parentId = parent.id
-        parent.group.childrenIds[child.id] = true
-    end
-end
-
-local function removeFromGroup(parent, child)
-    if child.parentId == parent.id then
-        child.parentId = nil
-        parent.group.childrenIds[child.id] = nil
     end
 end
 
