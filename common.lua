@@ -99,6 +99,7 @@ do
     local cache = {}
 
     local env = setmetatable({
+        print = print,
         ipairs = ipairs,
         next = next,
         pairs = pairs,
@@ -128,7 +129,7 @@ do
         os = { clock = os.clock, difftime = os.difftime, time = os.time },
     }, {
         __newindex = function(t, k)
-            error("global variable '" .. k .. "' not allowed!")
+            error("global variable '" .. k .. "' not allowed!", 2)
         end,
     })
 
@@ -278,7 +279,12 @@ do
     end
 
 
-    local nodeProxyMeta = { __index = nodeProxyIndex }
+    local nodeProxyMeta = {
+        __index = nodeProxyIndex,
+        __newindex = function(t, k)
+            error("setting member '" .. k .. "' of node not allowed", 2)
+        end,
+     }
 
     function getNodeProxy(node, getNodeWithId)
         if node == nil then
