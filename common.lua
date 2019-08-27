@@ -127,6 +127,7 @@ do
             rad = math.rad, random = math.random, sin = math.sin, sinh = math.sinh,
             sqrt = math.sqrt, tan = math.tan, tanh = math.tanh },
         os = { clock = os.clock, difftime = os.difftime, time = os.time },
+        love = { math = love.math },
     }, {
         __newindex = function(t, k)
             error("global variable '" .. k .. "' not allowed!", 2)
