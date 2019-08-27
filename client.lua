@@ -499,7 +499,7 @@ function client.update(dt)
             end
         end
 
-        do -- Run update rules
+        do -- Run think rules
             for id, node in pairs(share.nodes) do
                 if not home.selected[id] then
                     runThinkRules(node, function(id)

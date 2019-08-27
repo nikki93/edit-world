@@ -166,7 +166,7 @@ function server.update(dt)
         end
     end
 
-    do -- Run update rules
+    do -- Run think rules
         for id, node in pairs(share.nodes) do
             runThinkRules(node, function(id)
                 return share.nodes[id]
