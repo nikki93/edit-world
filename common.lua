@@ -248,12 +248,12 @@ do
         self.node.depth = depth
     end
 
-    function nodeProxyIndex:getPosition()
+    function nodeProxyIndex:getSize()
         local node = self.node
         return node.width, node.height
     end
 
-    function nodeProxyIndex:setPosition(width, height)
+    function nodeProxyIndex:setSize(width, height)
         assert(type(width) == 'number', '`width` must be a number')
         assert(type(height) == 'number', '`height` must be a number')
         local node = self.node
