@@ -834,6 +834,17 @@ function client.uiupdate()
                     nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
                         ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
                             onChange = function(newType)
+                                local hasChildren = false
+                                if node.type == 'group' then
+                                    for childId in pairs(node.group.childrenIds) do
+                                        hasChildren = true
+                                        break
+                                    end
+                                end
+                                if hasChildren then -- Shallow only for now
+                                    print("can't change type of a group that has children -- you must either detach or delete the children first!")
+                                    return
+                                end
                                 node[node.type] = nil
                                 node.type = newType
                                 node[node.type] = NODE_TYPE_DEFAULTS[node.type]
