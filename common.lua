@@ -255,6 +255,17 @@ do
         return children
     end
 
+    function nodeProxyIndex:getChild(childId)
+        local node = self.node
+        if node.type ~= 'group' then
+            return nil
+        end
+        local getNodeWithId = self.getNodeWithId
+        if node.group.childrenIds[childId] then
+            return getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        end
+    end
+
     function nodeProxyIndex:getChildrenWithTag(tag)
         local node = self.node
         if node.type ~= 'group' then
@@ -272,15 +283,25 @@ do
         return children
     end
 
-    function nodeProxyIndex:getChild(childId)
+    function nodeProxyIndex:getChildWithTag(tag)
         local node = self.node
         if node.type ~= 'group' then
             return nil
         end
-        local getNodeWithId = self.getNodeWithId
-        if node.group.childrenIds[childId] then
-            return getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        local tagIndex = node.group.tagIndices[tag]
+        if not tagIndex then
+            return nil
         end
+        local child = nil
+        local getNodeWithId = self.getNodeWithId
+        for childId in pairs(tagIndex) do
+            if child then
+                error("multiple children with tag '" .. tag .. "'")
+            else
+                child = getNodeProxy(getNodeWithId(childId), getNodeWithId)
+            end
+        end
+        return child
     end
 
 
