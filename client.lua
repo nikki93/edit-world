@@ -1129,3 +1129,10 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
         end)
     end
 end
+
+
+--- CHANGING
+
+-- function client.changing(diff)
+--     print('diff', serpent.block(diff))
+-- end
