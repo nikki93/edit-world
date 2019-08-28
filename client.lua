@@ -848,7 +848,7 @@ function client.uiupdate()
                                 })
                             end)
 
-                            if node.tagsText:match('^[%l%d ]*$') then
+                            if node.tagsText:match('^[%w ]*$') then
                                 local tagsChanged = false
                                 local newTags = {}
                                 for tag in node.tagsText:gmatch('%S+') do
