@@ -307,6 +307,8 @@ function client.draw()
 
                             local scale = math.min(node.width / qw, node.height / qh)
                             local transform = getWorldSpace(node).transform:clone():translate(-0.5 * node.width, -0.5 * node.height):scale(scale)
+                            local c = node.image.color
+                            love.graphics.setColor(c.r, c.g, c.b, c.a)
                             love.graphics.draw(image, theQuad, transform)
                         end
                     end
@@ -360,6 +362,7 @@ function client.draw()
                     if player.me then
                         local photo = imageFromUrl(player.me.photoUrl)
                         if photo then
+                            love.graphics.setColor(1, 1, 1, 1)
                             love.graphics.draw(photo, x - 0.5 * G, y - 0.5 * G, 0, G / photo:getWidth(), G / photo:getHeight())
                         end
                     end
@@ -881,6 +884,9 @@ function client.uiupdate()
                     if node.type == 'image' then
                         typeSectionOpen = ui.section('image', { open = typeSectionOpen }, function()
                             node.image.url = ui.textInput('url', node.image.url)
+
+                            local c = node.image.color
+                            c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
 
                             uiRow('smooth-scaling-crop', function()
                                 node.image.smoothScaling = ui.toggle('smooth scaling', 'smooth scaling', node.image.smoothScaling)

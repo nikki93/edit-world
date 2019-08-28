@@ -28,6 +28,7 @@ NODE_COMMON_DEFAULTS = {
 NODE_TYPE_DEFAULTS = {
     image = {
         url = 'https://github.com/nikki93/edit-world/raw/66e4850578fd46cbb9f3c1db30611981f26906e5/checkerboard.png',
+        color = { r = 1, g = 1, b = 1, a = 1 },
         smoothScaling = true,
         crop = false,
         cropX = 0,
@@ -37,9 +38,9 @@ NODE_TYPE_DEFAULTS = {
     },
     text = {
         text = 'type some\ntext here!',
+        fontUrl = '',
         fontSize = 14,
         color = { r = 0, g = 0, b = 0, a = 1 },
-        fontUrl = '',
     },
     group = {
         childrenIds = {},
@@ -277,6 +278,155 @@ do
     function nodeProxyIndex:setHeight(height)
         assert(type(height) == 'number', '`height` must be a number')
         self.node.height = height
+    end
+
+
+    function nodeProxyIndex:getColor()
+        local node = self.node
+        assert(node.type == 'text' or node.type == 'image', 'node must be an image or a text')
+        local c = node[node.type].color
+        return c.r, c.g, c.b, c.a
+    end
+
+    function nodeProxyIndex:setColor(r, g, b, a)
+        local node = self.node
+        assert(node.type == 'text' or node.type == 'image', 'node must be an image or a text')
+        assert(type(r) == 'number', '`r` must be a number')
+        assert(type(g) == 'number', '`g` must be a number')
+        assert(type(b) == 'number', '`b` must be a number')
+        assert(type(a) == 'number' or type(a) == 'nil', '`a` must either be a number or left out')
+        local c = node[node.type].color
+        c.r, c.g, c.b, c.a = r, g, b, a or 1
+    end
+
+
+    function nodeProxyIndex:getUrl()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.url
+    end
+
+    function nodeProxyIndex:setUrl(url)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(url) == 'string', '`url` must be a string')
+        self.node.image.url = url
+    end
+
+    function nodeProxyIndex:getSmoothScaling()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.smoothScaling
+    end
+
+    function nodeProxyIndex:setSmoothScaling(smoothScaling)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(smoothScaling) == 'boolean', '`smoothScaling` must be a boolean')
+        self.node.image.smoothScaling = smoothScaling
+    end
+
+    function nodeProxyIndex:getCrop()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.crop
+    end
+
+    function nodeProxyIndex:setCrop(crop)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(crop) == 'boolean', '`crop` must be a boolean')
+        self.node.image.crop = crop
+    end
+
+    function nodeProxyIndex:getCropRect()
+        assert(self.node.type == 'image', 'node must be an image')
+        local image = self.node.image
+        return image.cropX, image.cropY, image.cropWidth, image.cropHeight
+    end
+
+    function nodeProxyIndex:setCropRect(cropX, cropY, cropWidth, cropHeight)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(cropX) == 'number', '`cropX` must be a number')
+        assert(type(cropY) == 'number', '`cropY` must be a number')
+        assert((type(cropWidth) == 'number' and type(cropHeight) == 'number') or (type(cropWidth) == 'nil' and type(cropHeight) == 'nil'),
+            '`cropWidth` and `cropHeight` must either be both numbers or both left out')
+        local image = self.node.image
+        image.cropX, image.cropY = cropX, cropY
+        if cropWidth and cropHeight then
+            image.cropWidth, image.cropHeight = cropWidth, cropHeight
+        end
+    end
+
+    function nodeProxyIndex:getCropX()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.cropX
+    end
+
+    function nodeProxyIndex:setCropX(cropX)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(cropX) == 'number', '`cropX` must be a number')
+        self.node.image.cropX = cropX
+    end
+
+    function nodeProxyIndex:getCropY()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.cropY
+    end
+
+    function nodeProxyIndex:setCropY(cropY)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(cropY) == 'number', '`cropY` must be a number')
+        self.node.image.cropY = cropY
+    end
+
+    function nodeProxyIndex:getCropWidth()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.cropWidth
+    end
+
+    function nodeProxyIndex:setCropWidth(cropWidth)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(cropWidth) == 'number', '`cropWidth` must be a number')
+        self.node.image.cropWidth = cropWidth
+    end
+
+    function nodeProxyIndex:getCropHeight()
+        assert(self.node.type == 'image', 'node must be an image')
+        return self.node.image.cropHeight
+    end
+
+    function nodeProxyIndex:setCropHeight(cropHeight)
+        assert(self.node.type == 'image', 'node must be an image')
+        assert(type(cropHeight) == 'number', '`cropHeight` must be a number')
+        self.node.image.cropHeight = cropHeight
+    end
+
+
+    function nodeProxyIndex:getText(text)
+        assert(self.node.type == 'text', 'node must be a text')
+        return self.node.text.text
+    end
+
+    function nodeProxyIndex:setText(text)
+        assert(self.node.type == 'text', 'node must be a text')
+        self.node.text.text = tostring(text)
+    end
+
+    function nodeProxyIndex:getFontUrl()
+        assert(self.node.type == 'text', 'node must be a text')
+        return self.node.text.fontUrl
+    end
+
+    function nodeProxyIndex:setFontUrl(fontUrl)
+        assert(self.node.type == 'text', 'node must be a text')
+        assert(type(fontUrl) == 'string', '`fontUrl` must be a string')
+        self.node.text.fontUrl = fontUrl
+    end
+
+    function nodeProxyIndex:getFontSize()
+        assert(self.node.type == 'text', 'node must be a text')
+        return self.node.text.fontSize
+    end
+
+    function nodeProxyIndex:setFontSize(fontSize)
+        assert(self.node.type == 'text', 'node must be a text')
+        assert(type(fontSize) == 'number', '`fontSize` must be a number')
+        self.node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(fontSize, MAX_FONT_SIZE))
     end
 
 
