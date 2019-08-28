@@ -118,12 +118,14 @@ function server.update(dt)
     end
 
     do -- Edits, deletions, locks, parenting
-        local oldParentIds, newParentIds = {}, {}
         for clientId in pairs(share.players) do -- Deletions
             if homes[clientId].deleted then
                 for id in pairs(homes[clientId].deleted) do
-                    if share.locks[id] == clientId and share.nodes[id] then -- Check lock
-                        oldParentIds[id] = share.nodes[id].parentId -- Track unparent
+                    local oldNode = share.nodes[id]
+                    if share.locks[id] == clientId and oldNode then -- Check lock
+                        if oldNode.parentId then
+                            removeFromGroup(share.nodes[oldNode.parentId], oldNode)
+                        end
                         share.nodes[id] = nil
                     end
                 end
@@ -136,32 +138,29 @@ function server.update(dt)
         end
         for clientId in pairs(share.players) do -- Edits
             if homes[clientId].selected then
-                for id, node in pairs(homes[clientId].selected) do
+                for id, newNode in pairs(homes[clientId].selected) do
                     if not share.locks[id] then -- Acquire lock
                         share.locks[id] = clientId
                     end
                     if share.locks[id] == clientId then -- Check lock
-                        if share.nodes[id] and share.nodes[id].parentId ~= node.parentId then -- Track reparent
-                            oldParentIds[id] = share.nodes[id].parentId
-                            newParentIds[id] = node.parentId
+                        local oldNode = share.nodes[id]
+                        if oldNode then
+                            if oldNode.parentId == newNode.parentId then -- Keep parent, check tags
+                                updateTagIndex(oldNode.parentId and share.nodes[oldNode.parentId], oldNode, newNode.tags)
+                            else -- Change parent
+                                if oldNode.parentId then
+                                    removeFromGroup(share.nodes[oldNode.parentId], oldNode)
+                                end
+                                if newNode.parentId then
+                                    addToGroup(share.nodes[newNode.parentId], newNode)
+                                end
+                            end
+                        elseif newNode.parentId then
+                            addToGroup(share.nodes[newNode.parentId], newNode)
                         end
-                        share.nodes[id] = node -- Apply edits
+                        share.nodes[id] = newNode -- Apply edits
                     end
                 end
-            end
-        end
-        for childId, oldParentId in pairs(oldParentIds) do -- Apply unparents
-            local oldParent = share.nodes[oldParentId]
-            if oldParent and oldParent.type == 'group' then
-                oldParent.group.childrenIds[childId] = nil
-            end
-        end
-        for childId, newParentId in pairs(newParentIds) do -- Apply parents
-            local newParent = share.nodes[newParentId]
-            if newParent and newParent.type == 'group' then
-                newParent.group.childrenIds[childId] = true
-            else
-                share.nodes[childId].parentId = nil
             end
         end
     end

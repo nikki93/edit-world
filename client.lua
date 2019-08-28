@@ -103,20 +103,6 @@ local function newNode()
     newNode.x, newNode.y = cameraX, cameraY
 end
 
-local function addToGroup(parent, child)
-    if parent.type == 'group' then
-        child.parentId = parent.id
-        parent.group.childrenIds[child.id] = true
-    end
-end
-
-local function removeFromGroup(parent, child)
-    if child.parentId == parent.id then
-        child.parentId = nil
-        parent.group.childrenIds[child.id] = nil
-    end
-end
-
 local function deleteSelectedNodes()
     for id, node in pairs(home.selected) do
         local hasChildren = false
@@ -143,6 +129,7 @@ local function cloneSelectedNodes(node)
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
         if newNode.type == 'group' then -- Shallow clone only for now
             newNode.group.childrenIds = {}
+            newNode.group.tagIndices = {}
         end
         if newNode.parentId then
             addToGroup(home.selected[newNode.parentId] or share.nodes[newNode.parentId], newNode) 
@@ -712,7 +699,7 @@ function client.keypressed(key)
                             if curr.id == node.id then
                                 cycle = true
                             end
-                            curr = curr.parentId and share.nodes[curr.parentId]
+                            curr = curr.parentId and (home.selected[curr.parentId] or share.nodes[curr.parentId])
                         end
                     end
                     if not cycle then
@@ -723,7 +710,7 @@ function client.keypressed(key)
                         node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
 
                         -- Unlink old, link new
-                        local prevParent = node.parentId and share.nodes[node.parentId]
+                        local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
                         if prevParent then
                             removeFromGroup(prevParent, node)
                         end
@@ -738,7 +725,7 @@ function client.keypressed(key)
         end
         if not secondary then -- Remove parent
             for id, node in pairs(home.selected) do
-                local prevParent = node.parentId and share.nodes[node.parentId]
+                local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
                 local nodeTransform = getWorldSpace(node).transform
                 node.x, node.y = nodeTransform:transformPoint(0, 0)
                 node.rotation = getTransformRotation(nodeTransform)
@@ -857,6 +844,41 @@ function client.uiupdate()
                                 node[node.type] = NODE_TYPE_DEFAULTS[node.type]
                             end,
                         })
+
+                        ui.box('tags-row', { flexDirection = 'row', alignItems = 'stretch' }, function()
+                            ui.box('tags-input', { flex = 1 }, function()
+                                node.tagsText = ui.textInput('tags', node.tagsText, {
+                                    invalid = node.tagsText:match('^[%l%d ]*$') == nil,
+                                    invalidText = 'tags must be separated by spaces, and can only contain lowercase letters or digits',
+                                })
+                            end)
+
+                            if node.tagsText:match('^[%l%d ]*$') then
+                                local tagsChanged = false
+                                local newTags = {}
+                                for tag in node.tagsText:gmatch('%S+') do
+                                    if not node.tags[tag] then -- Tag added?
+                                        tagsChanged = true
+                                    end
+                                    newTags[tag] = true
+                                end
+                                if not tagsChanged then
+                                    for tag in pairs(node.tags) do
+                                        if not newTags[tag] then -- Tag removed?
+                                            tagsChanged = true
+                                        end
+                                    end
+                                end
+                                if tagsChanged then
+                                    ui.box('tags-button', { flexDirection = 'row', marginLeft = 20, alignItems = 'flex-end' }, function()
+                                        if ui.button('apply') then
+                                            updateTagIndex(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]), node, newTags)
+                                            node.tags = newTags
+                                        end
+                                    end)
+                                end
+                            end
+                        end)
 
                         uiRow('position', function()
                             node.x = ui.numberInput('x', node.x)

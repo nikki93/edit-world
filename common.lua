@@ -3,6 +3,8 @@ cs = require 'https://raw.githubusercontent.com/castle-games/share.lua/623c500de
 uuid = require 'https://raw.githubusercontent.com/Tieske/uuid/75f84281f4c45838f59fc2c6f893fa20e32389b6/src/uuid.lua'
 uuid.seed()
 
+serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb21933f63eb23ece7d60ba2349a8d2848/src/serpent.lua'
+
 
 --- CONSTANTS
 
@@ -16,6 +18,8 @@ MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 72
 
 NODE_COMMON_DEFAULTS = {
     type = 'image',
+    tagsText = '',
+    tags = {}, -- `tag` -> `true`
     parentId = nil,
     x = 0,
     y = 0,
@@ -43,7 +47,8 @@ NODE_TYPE_DEFAULTS = {
         color = { r = 0, g = 0, b = 0, a = 1 },
     },
     group = {
-        childrenIds = {},
+        childrenIds = {}, -- `childId` -> `true`
+        tagIndices = {}, -- `tag` -> `childId` -> `true`
         rules = {},
     },
 }
@@ -91,6 +96,54 @@ end
 
 
 --- COMMON LOGIC
+
+function updateTagIndex(parent, node, newTags)
+    if not (parent and parent.type == 'group') then
+        return
+    end
+    if node.tags ~= newTags then
+        for tag in pairs(node.tags) do
+            if not newTags[tag] then
+                local tagIndex = parent.group.tagIndices[tag]
+                if tagIndex then
+                    tagIndex[node.id] = nil
+                    local tagIndexEmpty = true
+                    for id in pairs(tagIndex) do
+                        tagIndexEmpty = false
+                        break
+                    end
+                    if tagIndexEmpty then
+                        parent.group.tagIndices[tag] = nil
+                    end
+                end
+            end
+        end
+    end
+    for tag in pairs(newTags) do
+        local tagIndex = parent.group.tagIndices[tag]
+        if not tagIndex then
+            tagIndex = {}
+            parent.group.tagIndices[tag] = tagIndex
+        end
+        tagIndex[node.id] = true
+    end
+end
+
+function addToGroup(parent, child)
+    if parent and parent.type == 'group' then
+        child.parentId = parent.id
+        parent.group.childrenIds[child.id] = true
+        updateTagIndex(parent, child, child.tags)
+    end
+end
+
+function removeFromGroup(parent, child)
+    if parent and child.parentId == parent.id then
+        child.parentId = nil
+        parent.group.childrenIds[child.id] = nil
+        updateTagIndex(parent, child, {})
+    end
+end
 
 function getRuleDescription(rule)
     return rule.description == '' and RULE_DESCRIPTION_DEFAULTS[rule.action] or rule.description
@@ -172,6 +225,23 @@ do
         local children = {}
         local getNodeWithId = self.getNodeWithId
         for childId in pairs(node.group.childrenIds) do
+            children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        end
+        return children
+    end
+
+    function nodeProxyIndex:getChildrenWithTag(tag)
+        local node = self.node
+        if node.type ~= 'group' then
+            return {}
+        end
+        local tagIndex = node.group.tagIndices[tag]
+        if not tagIndex then
+            return {}
+        end
+        local children = {}
+        local getNodeWithId = self.getNodeWithId
+        for childId in pairs(tagIndex) do
             children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId)
         end
         return children
