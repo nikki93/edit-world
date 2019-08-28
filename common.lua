@@ -5,6 +5,28 @@ uuid.seed()
 
 serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb21933f63eb23ece7d60ba2349a8d2848/src/serpent.lua'
 
+sfxr = require 'https://raw.githubusercontent.com/nucular/sfxrlua/27511554ab63b834a8d8b34437c4ba5f0f589fdf/sfxr.lua'
+
+marshal = require 'marshal'
+
+
+--- VALUE UTILS
+
+function cloneValue(t)
+    local typ = type(t)
+    if typ == 'nil' or typ == 'boolean' or typ == 'number' or typ == 'string' then
+        return t
+    elseif typ == 'table' or typ == 'userdata' then
+        local u = {}
+        for k, v in pairs(t) do
+            u[cloneValue(k)] = cloneValue(v)
+        end
+        return u
+    else
+        error('clone: bad type')
+    end
+end
+
 
 --- CONSTANTS
 
@@ -45,6 +67,10 @@ NODE_TYPE_DEFAULTS = {
         fontUrl = '',
         fontSize = 14,
         color = { r = 0, g = 0, b = 0, a = 1 },
+    },
+    sound = {
+        sfxr = cloneValue(sfxr.newSound()),
+        url = nil,
     },
     group = {
         childrenIds = {}, -- `childId` -> `true`
@@ -204,7 +230,6 @@ do
     end
 end
 
-local getNodeProxy
 do
     local nodeProxyIndex = {}
 
@@ -497,6 +522,56 @@ do
         assert(self.node.type == 'text', 'node must be a text')
         assert(type(fontSize) == 'number', '`fontSize` must be a number')
         self.node.text.fontSize = math.max(MIN_FONT_SIZE, math.min(fontSize, MAX_FONT_SIZE))
+    end
+
+
+    do
+        local cache = {}
+        function nodeProxyIndex:play()
+            local node = self.node
+            assert(node.type == 'sound', 'node must be a sound')
+            local sound = node.sound
+            if sound.sfxr then
+                local marshalled = marshal.encode(cloneValue(sound.sfxr))
+                local cached = cache[marshalled]
+                if not cached then
+                    cached = {}
+                    cache[marshalled] = cached
+                    local sfx = sfxr.newSound()
+                    for memberName, memberValue in pairs(sound.sfxr) do
+                        if type(memberValue) == 'table' or type(memberValue) == 'userdata' then
+                            local t = sfx[memberName]
+                            for k, v in pairs(memberValue) do
+                                t[k] = v
+                            end
+                        else
+                            assert(type(sfx[memberName]) == type(memberValue), 'internal error: type mismatch between sfxr parameters')
+                            sfx[memberName] = memberValue
+                        end
+                    end
+                    cached.source = love.audio.newSource(sfx:generateSoundData())
+                end
+                cached.source:clone():play()
+            end
+        end
+    end
+
+    do
+        local methodNames = {
+            'randomize', 'mutate', 'randomPickup', 'randomLaser', 'randomExplosion',
+            'randomPowerup', 'randomHit', 'randomJump', 'randomBlip',
+        }
+        for _, methodName in ipairs(methodNames) do
+            nodeProxyIndex[methodName] = function(self)
+                local node = self.node
+                assert(node.type == 'sound', 'node must be a sound')
+                local sound = node.sound
+                assert(sound.sfxr, 'node must be an sfxr sound')
+                local sfx = sfxr.newSound()
+                sfx[methodName](sfx)
+                sound.sfxr = cloneValue(sfx)
+            end
+        end
     end
 
 

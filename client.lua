@@ -76,21 +76,6 @@ local function depthLess(node1, node2)
     return node1.id < node2.id
 end
 
-local function cloneValue(t)
-    local typ = type(t)
-    if typ == 'nil' or typ == 'boolean' or typ == 'number' or typ == 'string' then
-        return t
-    elseif typ == 'table' or typ == 'userdata' then
-        local u = {}
-        for k, v in pairs(t) do
-            u[cloneValue(k)] = cloneValue(v)
-        end
-        return u
-    else
-        error('clone: bad type')
-    end
-end
-
 local function newNode()
     local id = uuid()
 
@@ -263,7 +248,7 @@ function client.draw()
                     table.sort(order, depthLess)
                 end
 
-                local groups, secondary = {}, nil
+                local groups, sounds, secondary = {}, {}, nil
 
                 for _, node in ipairs(order) do -- Draw order
                     if secondaryId == node.id then
@@ -313,7 +298,17 @@ function client.draw()
                     if node.type == 'group' then
                         table.insert(groups, node)
                     end
+                    if node.type == 'sound' then
+                        table.insert(sounds, node)
+                    end
                 end
+
+                love.graphics.stacked('all', function() -- Draw sound overlays
+                    love.graphics.setColor(1, 0, 1)
+                    for _, node in ipairs(sounds) do
+                        drawBox(node)
+                    end
+                end)
 
                 love.graphics.stacked('all', function() -- Draw group overlays
                     love.graphics.setColor(0.8, 0.5, 0.1)
@@ -837,7 +832,7 @@ function client.uiupdate()
 
                 for id, node in pairs(home.selected) do
                     nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
-                        ui.dropdown('type', node.type, { 'image', 'text', 'group' }, {
+                        ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
                             onChange = function(newType)
                                 node[node.type] = nil
                                 node.type = newType
@@ -848,8 +843,8 @@ function client.uiupdate()
                         ui.box('tags-row', { flexDirection = 'row', alignItems = 'stretch' }, function()
                             ui.box('tags-input', { flex = 1 }, function()
                                 node.tagsText = ui.textInput('tags', node.tagsText, {
-                                    invalid = node.tagsText:match('^[%l%d ]*$') == nil,
-                                    invalidText = 'tags must be separated by spaces, and can only contain lowercase letters or digits',
+                                    invalid = node.tagsText:match('^[%w ]*$') == nil,
+                                    invalidText = 'tags must be separated by spaces, and can only contain letters or digits',
                                 })
                             end)
 
@@ -950,6 +945,139 @@ function client.uiupdate()
 
                             local c = node.text.color
                             c.r, c.g, c.b, c.a = ui.colorPicker('color', c.r, c.g, c.b, c.a)
+                        end)
+                    end
+
+                    if node.type == 'sound' then
+                        typeSectionOpen = ui.section('sound', { open = typeSectionOpen }, function()
+                            if node.sound.sfxr then
+                                local s = node.sound.sfxr
+
+                                if ui.button('play') then
+                                    getNodeProxy(node):play()
+                                end
+
+                                ui.markdown('### randomize')
+
+                                uiRow('randomize-1', function()
+                                    if ui.button('randomize') then
+                                        getNodeProxy(node):randomize()
+                                    end
+                                end, function()
+                                    if ui.button('mutate') then
+                                        getNodeProxy(node):mutate()
+                                    end
+                                end, function()
+                                    if ui.button('pickup') then
+                                        getNodeProxy(node):randomPickup()
+                                    end
+                                end)
+
+                                uiRow('randomize-2', function()
+                                    if ui.button('laser') then
+                                        getNodeProxy(node):randomLaser()
+                                    end
+                                end, function()
+                                    if ui.button('explosion') then
+                                        getNodeProxy(node):randomExplosion()
+                                    end
+                                end, function()
+                                    if ui.button('powerup') then
+                                        getNodeProxy(node):randomPowerup()
+                                    end
+                                end)
+
+                                uiRow('randomize-3', function()
+                                    if ui.button('hit') then
+                                        getNodeProxy(node):randomHit()
+                                    end
+                                end, function()
+                                    if ui.button('jump') then
+                                        getNodeProxy(node):randomJump()
+                                    end
+                                end, function()
+                                    if ui.button('blip') then
+                                        getNodeProxy(node):randomBlip()
+                                    end
+                                end)
+
+                                ui.markdown('### parameters')
+
+                                s.repeatspeed = ui.slider('repeat speed', s.repeatspeed, 0, 1, { step = 0.01 })
+
+                                local waveforms = {
+                                    square = 0, sawtooth = 1, sine = 2, noise = 3,
+                                    [0] = 'square', [1] = 'sawtooth', [2] = 'sine', [3] = 'noise',
+                                }
+                                local waveformIndex = waveforms[s.waveform]
+                                waveformIndex = ui.dropdown('waveform', waveformIndex, { 'square', 'sawtooth', 'sine', 'noise' })
+                                s.waveform = waveforms[waveformIndex]
+
+                                uiRow('volume-master-sound', function()
+                                    s.volume.master = ui.slider('volume master', s.volume.master, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.volume.sound = ui.slider('volume sound', s.volume.sound, 0, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('envelope-attack-sustain', function()
+                                    s.envelope.attack = ui.slider('envelope attack', s.envelope.attack, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.envelope.sustain = ui.slider('envelope sustain', s.envelope.sustain, 0, 1, { step = 0.01 })
+                                end)
+                                uiRow('envelope-punch-decay', function()
+                                    s.envelope.punch = ui.slider('envelope punch', s.envelope.punch, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.envelope.decay = ui.slider('envelope decay', s.envelope.decay, 0, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('frequency-start-min', function()
+                                    s.frequency.start = ui.slider('frequency start', s.frequency.start, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.frequency.min = ui.slider('frequency min', s.frequency.min, 0, 1, { step = 0.01 })
+                                end)
+                                uiRow('frequency-slide-dslide', function()
+                                    s.frequency.slide = ui.slider('frequency slide', s.frequency.slide, -1, 1, { step = 0.01 })
+                                end, function()
+                                    s.frequency.dslide = ui.slider('frequency dslide', s.frequency.dslide, -1, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('change-amount-speed', function()
+                                    s.change.amount = ui.slider('change amount', s.change.amount, -1, 1, { step = 0.01 })
+                                end, function()
+                                    s.change.speed = ui.slider('change speed', s.change.speed, 0, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('duty-ratio-sweep', function()
+                                    s.duty.ratio = ui.slider('duty ratio', s.duty.ratio, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.duty.sweep = ui.slider('duty sweep', s.duty.sweep, -1, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('phaser-offset-sweep', function()
+                                    s.phaser.offset = ui.slider('phaser offset', s.phaser.offset, -1, 1, { step = 0.01 })
+                                end, function()
+                                    s.phaser.sweep = ui.slider('phaser sweep', s.phaser.sweep, -1, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('lowpass-cutoff-sweep', function()
+                                    s.lowpass.cutoff = ui.slider('lowpass cutoff', s.lowpass.cutoff, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.lowpass.sweep = ui.slider('lowpass sweep', s.lowpass.sweep, -1, 1, { step = 0.01 })
+                                end)
+                                s.lowpass.resonance = ui.slider('lowpass resonance', s.lowpass.resonance, 0, 1, { step = 0.01 })
+
+                                uiRow('highpass-cutoff-sweep', function()
+                                    s.highpass.cutoff = ui.slider('highpass cutoff', s.highpass.cutoff, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.highpass.sweep = ui.slider('highpass sweep', s.highpass.sweep, -1, 1, { step = 0.01 })
+                                end)
+
+                                uiRow('vibrato-depth-speed', function()
+                                    s.vibrato.depth = ui.slider('vibrato depth', s.vibrato.depth, 0, 1, { step = 0.01 })
+                                end, function()
+                                    s.vibrato.speed = ui.slider('vibrato speed', s.vibrato.speed, 0, 1, { step = 0.01 })
+                                end)
+                            end
                         end)
                     end
 
