@@ -136,13 +136,13 @@ function server.update(dt)
             end
         end
         for id, clientId in pairs(share.locks) do -- Release locks
-            if not (homes[clientId] and homes[clientId].selected and homes[clientId].selected[id]) then
+            if not (homes[clientId] and homes[clientId].controlled and homes[clientId].controlled[id]) then
                 share.locks[id] = nil
             end
         end
         for clientId in pairs(share.players) do -- Edits
-            if homes[clientId].selected then
-                for id, newNode in pairs(homes[clientId].selected) do
+            if homes[clientId].controlled then
+                for id, newNode in pairs(homes[clientId].controlled) do
                     if not share.locks[id] then -- Acquire lock
                         share.locks[id] = clientId
                     end

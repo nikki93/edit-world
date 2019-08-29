@@ -16,13 +16,22 @@ local share = client.share
 local home = client.home
 
 
---- UTIL
+--- LOCALS
+
+local mode = 'none'
+
+local selections = {} -- node id -> `true` for selections we control
+local conflictingSelections = {} -- node id -> `true` for attempted selections someone else controls
+local secondarySelection = nil -- node id
 
 local cameraX, cameraY = 0, 0
 local cameraW, cameraH = 800, 450
 
+
+--- UTIL
+
 local function getNodeWithId(id)
-    return id and (home.selected[id] or share.nodes[id])
+    return id and (home.controlled[id] or share.nodes[id])
 end
 
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
@@ -80,39 +89,59 @@ local function depthLess(node1, node2)
     return node1.id < node2.id
 end
 
+local function hasChildren(idOrNode)
+    local node = type(idOrNode) ~= 'string' and idOrNode or getNodeWithId(idOrNode)
+    if node.type == 'group'then
+        for childId in pairs(node.group.childrenIds) do
+            return true
+        end
+    end
+    return false
+end
+
+local function deselectAll()
+    selections = {}
+    conflictingSelections = {}
+    secondarySelection = nil
+    home.controlled = {}
+end
+
+local function selectOnly(node)
+    selections = { [node.id] = true }
+    home.controlled[node.id] = node
+end
+
 local function newNode()
-    local id = uuid()
+    -- Deselect all
+    deselectAll()
 
-    home.selected = {}
-    home.selected[id] = NODE_COMMON_DEFAULTS
-    local newNode = home.selected[id]
-
-    newNode.id = id
+    -- Create
+    local newId = uuid()
+    local newNode = NODE_COMMON_DEFAULTS
+    newNode.id = newId
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
     newNode.x, newNode.y = cameraX, cameraY
+
+    -- Select
+    selectOnly(newNode)
 end
 
 local function deleteSelectedNodes()
-    for id, node in pairs(home.selected) do
-        local hasChildren = false
-        if node.type == 'group' then
-            for childId in pairs(node.group.childrenIds) do
-                hasChildren = true
-                break
-            end
-        end
-        if hasChildren then -- Shallow delete only for now
+    for id in pairs(selections) do
+        if hasChildren(id) then -- Shallow delete only for now
             print("can't delete a group that has children -- you must either detach or delete the children first!")
             return
         end
-        home.deleted[node.id] = true
-        home.selected[node.id] = nil
+        home.deleted[id] = true
+        selections[id] = nil
+        home.controlled[id] = nil
     end
 end
 
-local function cloneSelectedNodes(node)
-    for id, node in pairs(home.selected) do
+local function cloneSelectedNodes()
+    for id in pairs(selections) do
+        local node = getNodeWithId(id)
         if node.parentId and share.locks[node.parentId] and share.locks[node.parentId] ~= client.id then
             local player = share.players[share.locks[node.parentId]]
             if player and player.me and player.me.username then
@@ -121,6 +150,10 @@ local function cloneSelectedNodes(node)
                 print("can't clone this node because its parent is locked by another user")
             end
         else
+            -- Deselect all
+            deselectAll()
+
+            -- Clone
             local newId = uuid()
             local newNode = cloneValue(node)
             newNode.id = newId
@@ -133,7 +166,9 @@ local function cloneSelectedNodes(node)
             if newNode.parentId then
                 addToGroup(getNodeWithId(node.parentId), newNode) 
             end
-            home.selected = { [newId] = newNode }
+
+            -- Select
+            selectOnly(newNode)
         end
     end
 end
@@ -141,21 +176,13 @@ end
 
 --- LOAD
 
-local mode = 'none'
-
 local theQuad
-
-local conflictingSelections = {}
-
-local secondaryId
 
 local defaultFont
 
 local defaultImage
 
 function client.load()
-    cameraX, cameraY = 0, 0
-
     theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 
     defaultFont = love.graphics.newFont(14)
@@ -171,8 +198,8 @@ function client.connect()
         home.me = castle.user.getMe()
     end
 
-    do -- Selected
-        home.selected = {}
+    do -- Controlled
+        home.controlled = {}
     end
 
     do -- Deleted
@@ -251,27 +278,21 @@ function client.draw()
 
             do -- Nodes
                 local order = {}
-                do -- Collect order
-                    for id, node in pairs(share.nodes) do -- Share, skipping selected
-                        if not home.selected[id] then
+                do -- Collect draw order, preferring controlled versions
+                    for id, node in pairs(share.nodes) do -- Share, skipping controlled
+                        if not home.controlled[id] then
                             table.insert(order, node)
                         end
                     end
-
-                    for id, node in pairs(home.selected) do -- Selected
+                    for id, node in pairs(home.controlled) do -- Controlled
                         table.insert(order, node)
                     end
-
                     table.sort(order, depthLess)
                 end
 
-                local groups, sounds, secondary = {}, {}, nil
+                local groups, sounds = {}, {}
 
-                for _, node in ipairs(order) do -- Draw order
-                    if secondaryId == node.id then
-                        secondary = node
-                    end
-
+                for _, node in ipairs(order) do -- Draw in order
                     if node.type == 'image' then
                         local image = imageFromUrl(node.image.url)
                         if image then
@@ -346,16 +367,22 @@ function client.draw()
 
                 love.graphics.stacked('all', function() -- Draw selection overlays
                     love.graphics.setColor(0, 1, 0)
-                    for id, node in pairs(home.selected) do
-                        drawBox(node)
+                    for id, node in pairs(selections) do
+                        local node = getNodeWithId(id)
+                        if node then
+                            drawBox(node)
+                        end
                     end
                 end)
 
-                if secondary then
-                    love.graphics.stacked('all', function() -- Draw secondary overlay
-                        love.graphics.setColor(1, 0, 0)
-                        drawBox(secondary)
-                    end)
+                if secondarySelection then -- Draw secondary slection overlay
+                    local secondaryNode = getNodeWithId(secondarySelection)
+                    if secondaryNode then
+                        love.graphics.stacked('all', function()
+                            love.graphics.setColor(1, 0, 0)
+                            drawBox(secondaryNode)
+                        end)
+                    end
                 end
             end
 
@@ -427,7 +454,7 @@ function client.draw()
 
             do
                 local selectCount = 0
-                for id, node in pairs(home.selected) do
+                for id, node in pairs(selections) do
                     selectCount = selectCount + 1
                 end
                 if selectCount >= 1 then
@@ -435,7 +462,7 @@ function client.draw()
                 end
             end
 
-            if secondaryId then
+            if secondarySelection then
                 leftText('secondary 1')
             end
 
@@ -474,8 +501,8 @@ function client.update(dt)
         end
 
         do -- Deletions
-            if secondaryId and not share.nodes[secondaryId] then
-                secondaryId = nil
+            if secondarySelection and not share.nodes[secondarySelection] then
+                secondarySelection = nil
             end
             for id in pairs(conflictingSelections) do
                 if not share.nodes[id] then
@@ -543,49 +570,58 @@ function client.update(dt)
 
         do -- Run think rules
             for id, node in pairs(share.nodes) do
-                if not home.selected[id] then
+                if not home.controlled[id] then
                     runThinkRules(node, getNodeWithId)
                 end
             end
-            for id, node in pairs(home.selected) do
+            for id, node in pairs(home.controlled) do
                 runThinkRules(node, getNodeWithId)
             end
         end
 
         if mode == 'grab' then -- Grab
-            for id, node in pairs(home.selected) do
-                local transform = getParentWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
+            for id in pairs(selections) do
+                local node = home.controlled[id]
+                if node then
+                    local transform = getParentWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    node.x, node.y = node.x + lx - prevLX, node.y + ly - prevLY
+                end
             end
         end
 
         if mode == 'resize' then -- Resize
-            for id, node in pairs(home.selected) do
-                local transform = getWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                    node.width = math.max(G, node.width * lx / prevLX)
-                end
-                if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
-                    node.height = math.max(G, node.height * ly / prevLY)
+            for id in pairs(selections) do
+                local node = home.controlled[id]
+                if node then
+                    local transform = getWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    if math.abs(prevLX) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                        node.width = math.max(G, node.width * lx / prevLX)
+                    end
+                    if math.abs(prevLY) >= 0.5 * G and math.abs(ly) >= 0.5 * G then
+                        node.height = math.max(G, node.height * ly / prevLY)
+                    end
                 end
             end
         end
 
         if mode == 'rotate' then -- Rotate
-            for id, node in pairs(home.selected) do
-                local transform = getWorldSpace(node).transform
-                local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
-                local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
-                node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
-                while node.rotation > math.pi do
-                    node.rotation = node.rotation - 2 * math.pi
-                end
-                while node.rotation < -math.pi do
-                    node.rotation = node.rotation + 2 * math.pi
+            for id in pairs(selections) do
+                local node = home.controlled[id]
+                if node then
+                    local transform = getWorldSpace(node).transform
+                    local prevLX, prevLY = transform:inverseTransformPoint(prevMouseWX, prevMouseWY)
+                    local lx, ly = transform:inverseTransformPoint(mouseWX, mouseWY)
+                    node.rotation = node.rotation + math.atan2(ly, lx) - math.atan2(prevLY, prevLX)
+                    while node.rotation > math.pi do
+                        node.rotation = node.rotation - 2 * math.pi
+                    end
+                    while node.rotation < -math.pi do
+                        node.rotation = node.rotation + 2 * math.pi
+                    end
                 end
             end
         end
@@ -608,23 +644,23 @@ function client.mousepressed(x, y, button)
             local isSelected, select -- Decide between primary or secondary selection
             if button == 1 then -- Primary
                 function isSelected(id)
-                    return conflictingSelections[id] or home.selected[id]
+                    return conflictingSelections[id] or selections[id]
                 end
                 function select(node)
+                    deselectAll()
                     if share.locks[node.id] and share.locks[node.id] ~= client.id then
-                        home.selected = {}
                         conflictingSelections = { [node.id] = true }
                     else
-                        home.selected = { [node.id] = node }
-                        conflictingSelections = {}
+                        selections = { [node.id] = true }
+                        home.controlled[node.id] = node
                     end
                 end
             elseif button == 2 then -- Secondary
                 function isSelected(id)
-                    return secondaryId == id
+                    return secondarySelection == id
                 end
                 function select(node)
-                    secondaryId = node.id
+                    secondarySelection = node.id
                 end
             end
 
@@ -652,9 +688,7 @@ function client.mousepressed(x, y, button)
             if pick then
                 select(pick)
             else
-                home.selected = {}
-                secondaryId = nil
-                conflictingSelections = {}
+                deselectAll()
             end
         end
 
@@ -729,58 +763,63 @@ function client.keypressed(key)
     end
 
     if key == 'p' then -- Parent
-        local secondary = secondaryId and getNodeWithId(secondaryId)
-        if secondary then -- New parent
-            if share.locks[secondaryId] and share.locks[secondaryId] ~= client.id then
-                local player = share.players[share.locks[secondaryId]]
+        local secondaryNode = secondarySelection and getNodeWithId(secondarySelection)
+        if secondaryNode then -- New parent
+            if share.locks[secondarySelection] and share.locks[secondarySelection] ~= client.id then
+                local player = share.players[share.locks[secondarySelection]]
                 if player and player.me and player.me.username then
                     print("can't add to group because the group is locked by " .. player.me.username)
                 else
                     print("can't add to group because the group is locked by another user")
                 end
             else
-                if secondary.type == 'group' then
-                    for id, node in pairs(home.selected) do
-                        -- Make sure no cycles
-                        local cycle = false
-                        do
-                            local curr = secondary
-                            while curr do
-                                if curr.id == node.id then
-                                    cycle = true
+                if secondaryNode.type == 'group' then
+                    for id in pairs(selections) do
+                        local node = home.controlled[id]
+                        if node then
+                            -- Make sure no cycles
+                            local cycle = false
+                            do
+                                local curr = secondaryNode
+                                while curr do
+                                    if curr.id == node.id then
+                                        cycle = true
+                                    end
+                                    curr = getNodeWithId(curr.parentId)
                                 end
-                                curr = getNodeWithId(curr.parentId)
                             end
-                        end
-                        if not cycle then
-                            -- Update local transform
-                            local secondaryTransform = getWorldSpace(secondary).transform
-                            local nodeTransform = getWorldSpace(node).transform
-                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+                            if not cycle then
+                                -- Update local transform
+                                local secondaryTransform = getWorldSpace(secondaryNode).transform
+                                local nodeTransform = getWorldSpace(node).transform
+                                node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                                node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
 
-                            -- Unlink old, link new
-                            local prevParent = getNodeWithId(node.parentId)
-                            if prevParent then
-                                removeFromGroup(prevParent, node)
+                                -- Unlink old, link new
+                                local prevParent = getNodeWithId(node.parentId)
+                                if prevParent then
+                                    removeFromGroup(prevParent, node)
+                                end
+                                addToGroup(secondaryNode, node)
+                            else
+                                print("can't add a node as a child of itself or one of its descendants!")
                             end
-                            addToGroup(secondary, node)
-                        else
-                            print("can't add a node as a child of itself or one of its descendants!")
                         end
                     end
                 else
                     print('only groups can be parents!')
                 end
             end
-        end
-        if not secondary then -- Remove parent
-            for id, node in pairs(home.selected) do
-                local prevParent = getNodeWithId(node.parentId)
-                local nodeTransform = getWorldSpace(node).transform
-                node.x, node.y = nodeTransform:transformPoint(0, 0)
-                node.rotation = getTransformRotation(nodeTransform)
-                removeFromGroup(prevParent, node)
+        else -- Remove parent
+            for id in pairs(selections) do
+                local node = home.controlled[id]
+                if node then
+                    local prevParent = getNodeWithId(node.parentId)
+                    local nodeTransform = getWorldSpace(node).transform
+                    node.x, node.y = nodeTransform:transformPoint(0, 0)
+                    node.rotation = getTransformRotation(nodeTransform)
+                    removeFromGroup(prevParent, node)
+                end
             end
         end
     end
@@ -831,22 +870,16 @@ function client.uiupdate()
     if client.connected then
         ui.tabs('main', function()
             ui.tab('nodes', function()
-                local selectionEmpty = true
-                for id, node in pairs(home.selected) do
-                    selectionEmpty = false
-                    break
-                end
-
                 uiRow('top-bar', function()
                     if ui.button('new') then
                         newNode()
                     end
                 end, function()
-                    if not selectionEmpty and ui.button('delete', { kind = 'danger' }) then
+                    if next(selections) and ui.button('delete', { kind = 'danger' }) then
                         deleteSelectedNodes()
                     end
                 end, function()
-                    if not selectionEmpty and ui.button('clone') then
+                    if next(selections) and ui.button('clone') then
                         cloneSelectedNodes()
                     end
                 end)
@@ -857,14 +890,7 @@ function client.uiupdate()
                     nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
                         ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
                             onChange = function(newType)
-                                local hasChildren = false
-                                if node.type == 'group' then
-                                    for childId in pairs(node.group.childrenIds) do
-                                        hasChildren = true
-                                        break
-                                    end
-                                end
-                                if hasChildren then -- Shallow only for now
+                                if hasChildren(node) then -- Shallow only for now
                                     print("can't change type of a group that has children -- you must either detach or delete the children first!")
                                     return
                                 end
@@ -1204,7 +1230,7 @@ function client.uiupdate()
                                             ui.markdown(child.type)
                                         end, function()
                                             if ui.button('show') then
-                                                secondaryId = child.id
+                                                secondarySelection = child.id
                                             end
                                         end, function()
                                             if ui.button('unlink') then
@@ -1221,20 +1247,19 @@ function client.uiupdate()
                     end
                 end
 
-                for id, node in pairs(home.selected) do
-                    uiForNode(node)
+                for id in pairs(selections) do
+                    local node = getNodeWithId(id)
+                    if node then
+                        uiForNode(node)
+                    end
                 end
 
                 for id in pairs(conflictingSelections) do
                     local node = getNodeWithId(id)
                     if node then
                         ui.box('locked-' .. id, { border = '1px solid yellow', padding = 2 }, function()
-                            local warn
                             local player = share.players[share.locks[id]]
                             if player and player.me and player.me.username then
-                                function warn()
-                                    print("can't edit this node because it is locked by " .. player.me.username)
-                                end
                                 if player.me.photoUrl then
                                     ui.box('lock-description', { flexDirection = 'row' }, function()
                                         ui.box('locked-by', { marginRight = 10, justifyContent = 'center' }, function()
@@ -1251,9 +1276,6 @@ function client.uiupdate()
                                     ui.markdown('🔒 locked by ' .. player.username)
                                 end
                             else
-                                function warn()
-                                    print("can't edit this node because it is locked by another user")
-                                end
                                 ui.markdown('🔒 locked by unknown')
                             end
 
@@ -1265,7 +1287,11 @@ function client.uiupdate()
                             root:__flush()
                             uiForNode(root.node)
                             if root:__diff(0) then
-                                warn()
+                                if player and player.me and player.me.username then
+                                    print("can't edit this node because it is locked by " .. player.me.username)
+                                else
+                                    print("can't edit this node because it is locked by another user")
+                                end
                             end
                         end)
                     end
