@@ -7,6 +7,8 @@ serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb
 
 sfxr = require 'https://raw.githubusercontent.com/nucular/sfxrlua/27511554ab63b834a8d8b34437c4ba5f0f589fdf/sfxr.lua'
 
+stateLib = require 'https://raw.githubusercontent.com/castle-games/share.lua/623c500de3cbfd544db9e6f2bdcd03b5b7e6f377/state.lua'
+
 marshal = require 'marshal'
 
 

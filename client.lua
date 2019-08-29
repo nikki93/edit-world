@@ -132,6 +132,8 @@ local mode = 'none'
 
 local theQuad
 
+local conflictingSelections = {}
+
 local secondaryId
 
 local defaultFont
@@ -319,6 +321,16 @@ function client.draw()
                     end
                 end)
 
+                love.graphics.stacked('all', function() -- Draw conflicting selection overlays
+                    love.graphics.setColor(0.5, 0, 1)
+                    for id in pairs(conflictingSelections) do
+                        local node = share.nodes[id]
+                        if node then
+                            drawBox(share.nodes[id])
+                        end
+                    end
+                end)
+
                 love.graphics.stacked('all', function() -- Draw selection overlays
                     love.graphics.setColor(0, 1, 0)
                     for id, node in pairs(home.selected) do
@@ -448,6 +460,26 @@ function client.update(dt)
             NODE_TYPE_DEFAULTS.image.smoothScaling = share.settings.defaultSmoothScaling
         end
 
+        do -- Deletions
+            if secondaryId and not share.nodes[secondaryId] then
+                secondaryId = nil
+            end
+            for id in pairs(conflictingSelections) do
+                if not share.nodes[id] then
+                    conflictingSelections[id] = nil
+                end
+            end
+        end
+
+        -- do -- Acquirable conflicting selections
+        --     for id in pairs(conflictingSelections) do
+        --         if not share.locks[id] or share.locks[id] == client.id then
+        --             conflictingSelections[id] = nil
+        --             home.selected = { [id] = share.nodes[id] }
+        --         end
+        --     end
+        -- end
+
         do -- Player motion
             local player = share.players[client.id]
 
@@ -573,7 +605,11 @@ function client.mousepressed(x, y, button)
                     return home.selected[id]
                 end
                 function select(node)
-                    home.selected = { [node.id] = node }
+                    if share.locks[node.id] and share.locks[node.id] ~= client.id then
+                        conflictingSelections = { [node.id] = true }
+                    else
+                        home.selected = { [node.id] = node }
+                    end
                 end
             elseif button == 2 then -- Secondary
                 function isSelected(id)
@@ -610,6 +646,7 @@ function client.mousepressed(x, y, button)
             else
                 home.selected = {}
                 secondaryId = nil
+                conflictingSelections = {}
             end
         end
 
@@ -797,42 +834,9 @@ function client.uiupdate()
                     end
                 end)
 
-                local conflictingLock = nil
-                for id, node in pairs(home.selected) do
-                    local lock = share.locks[id]
-                    if lock ~= client.id then
-                        conflictingLock = lock
-                    end
-                end
-
-                if conflictingLock then
-                    ui.markdown('---')
-
-                    local player = share.players[conflictingLock]
-                    if player and player.me and player.me.username then
-                        if player.me.photoUrl then
-                            ui.box('lock-description', { flexDirection = 'row' }, function()
-                                ui.box('locked-by', { marginRight = 10, justifyContent = 'center' }, function()
-                                    ui.markdown('🔒 locked by')
-                                end)
-                                ui.box('lock-photo', { maxWidth = 16, maxHeight = 16, justifyContent = 'center' }, function()
-                                    ui.image(player.me.photoUrl)
-                                end)
-                                ui.box('lock-username', { flex = 1, marginLeft = '8px', justifyContent = 'center' }, function()
-                                    ui.markdown(player.me.username)
-                                end)
-                            end)
-                        else
-                            ui.markdown('🔒 locked by ' .. player.username)
-                        end
-                    else
-                        ui.markdown('🔒 locked by unknown')
-                    end
-                end
-
                 ui.markdown('---')
 
-                for id, node in pairs(home.selected) do
+                local function uiForNode(node)
                     nodeSectionOpen = ui.section('node', { open = nodeSectionOpen }, function()
                         ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
                             onChange = function(newType)
@@ -1187,6 +1191,56 @@ function client.uiupdate()
                                     end
                                 end
                             end)
+                        end)
+                    end
+                end
+
+                for id, node in pairs(home.selected) do
+                    uiForNode(node)
+                end
+
+                for id in pairs(conflictingSelections) do
+                    local node = share.nodes[id]
+                    if node then
+                        ui.box('locked-' .. id, { border = '1px solid yellow', padding = 2 }, function()
+                            local warn
+                            local player = share.players[share.locks[id]]
+                            if player and player.me and player.me.username then
+                                function warn()
+                                    print("can't edit this node because it is locked by " .. player.me.username)
+                                end
+                                if player.me.photoUrl then
+                                    ui.box('lock-description', { flexDirection = 'row' }, function()
+                                        ui.box('locked-by', { marginRight = 10, justifyContent = 'center' }, function()
+                                            ui.markdown('🔒 locked by')
+                                        end)
+                                        ui.box('lock-photo', { maxWidth = 16, maxHeight = 16, justifyContent = 'center' }, function()
+                                            ui.image(player.me.photoUrl)
+                                        end)
+                                        ui.box('lock-username', { flex = 1, marginLeft = '8px', justifyContent = 'center' }, function()
+                                            ui.markdown(player.me.username)
+                                        end)
+                                    end)
+                                else
+                                    ui.markdown('🔒 locked by ' .. player.username)
+                                end
+                            else
+                                function warn()
+                                    print("can't edit this node because it is locked by another user")
+                                end
+                                ui.markdown('🔒 locked by unknown')
+                            end
+
+                            ui.markdown('---')
+
+                            local root = stateLib.new()
+                            root:__autoSync(true)
+                            root.node = node
+                            root:__flush()
+                            uiForNode(root.node)
+                            if root:__diff(0) then
+                                warn()
+                            end
                         end)
                     end
                 end
