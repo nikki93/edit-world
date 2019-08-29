@@ -904,8 +904,17 @@ function client.uiupdate()
                                 if tagsChanged then
                                     ui.box('tags-button', { flexDirection = 'row', marginLeft = 20, alignItems = 'flex-end' }, function()
                                         if ui.button('apply') then
-                                            updateTagIndex(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]), node, newTags)
-                                            node.tags = newTags
+                                            if node.parentId and share.locks[node.parentId] and share.locks[node.parentId] ~= client.id then
+                                                local player = share.players[share.locks[node.parentId]]
+                                                if player and player.me and player.me.username then
+                                                    print("can't change the tags of this node because its parent is locked by " .. player.me.username)
+                                                else
+                                                    print("can't change the tags of this node because its parent is locked by another user")
+                                                end
+                                            else
+                                                updateTagIndex(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]), node, newTags)
+                                                node.tags = newTags
+                                            end
                                         end
                                     end)
                                 end
