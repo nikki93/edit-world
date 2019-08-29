@@ -109,19 +109,28 @@ end
 
 local function cloneSelectedNodes(node)
     for id, node in pairs(home.selected) do
-        local newId = uuid()
-        local newNode = cloneValue(node)
-        newNode.id = newId
-        newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
-        newNode.x, newNode.y = newNode.x + G, newNode.y + G
-        if newNode.type == 'group' then -- Shallow clone only for now
-            newNode.group.childrenIds = {}
-            newNode.group.tagIndices = {}
+        if node.parentId and share.locks[node.parentId] and share.locks[node.parentId] ~= client.id then
+            local player = share.players[share.locks[node.parentId]]
+            if player and player.me and player.me.username then
+                print("can't clone this node because its parent is locked by " .. player.me.username)
+            else
+                print("can't clone this node because its parent is locked by another user")
+            end
+        else
+            local newId = uuid()
+            local newNode = cloneValue(node)
+            newNode.id = newId
+            newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
+            newNode.x, newNode.y = newNode.x + G, newNode.y + G
+            if newNode.type == 'group' then -- Shallow clone only for now
+                newNode.group.childrenIds = {}
+                newNode.group.tagIndices = {}
+            end
+            if newNode.parentId then
+                addToGroup(home.selected[newNode.parentId] or share.nodes[newNode.parentId], newNode) 
+            end
+            home.selected = { [newId] = newNode }
         end
-        if newNode.parentId then
-            addToGroup(home.selected[newNode.parentId] or share.nodes[newNode.parentId], newNode) 
-        end
-        home.selected = { [newId] = newNode }
     end
 end
 
@@ -602,13 +611,15 @@ function client.mousepressed(x, y, button)
             local isSelected, select -- Decide between primary or secondary selection
             if button == 1 then -- Primary
                 function isSelected(id)
-                    return home.selected[id]
+                    return conflictingSelections[id] or home.selected[id]
                 end
                 function select(node)
                     if share.locks[node.id] and share.locks[node.id] ~= client.id then
+                        home.selected = {}
                         conflictingSelections = { [node.id] = true }
                     else
                         home.selected = { [node.id] = node }
+                        conflictingSelections = {}
                     end
                 end
             elseif button == 2 then -- Secondary
@@ -723,38 +734,47 @@ function client.keypressed(key)
     if key == 'p' then -- Parent
         local secondary = secondaryId and share.nodes[secondaryId]
         if secondary then -- New parent
-            if secondary.type == 'group' then
-                for id, node in pairs(home.selected) do
-                    -- Make sure no cycles
-                    local cycle = false
-                    do
-                        local curr = secondary
-                        while curr do
-                            if curr.id == node.id then
-                                cycle = true
-                            end
-                            curr = curr.parentId and (home.selected[curr.parentId] or share.nodes[curr.parentId])
-                        end
-                    end
-                    if not cycle then
-                        -- Update local transform
-                        local secondaryTransform = getWorldSpace(secondary).transform
-                        local nodeTransform = getWorldSpace(node).transform
-                        node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                        node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
-
-                        -- Unlink old, link new
-                        local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
-                        if prevParent then
-                            removeFromGroup(prevParent, node)
-                        end
-                        addToGroup(secondary, node)
-                    else
-                        print("can't add a node as a child of itself or one of its descendants!")
-                    end
+            if share.locks[secondaryId] and share.locks[secondaryId] ~= client.id then
+                local player = share.players[share.locks[secondaryId]]
+                if player and player.me and player.me.username then
+                    print("can't add to group because the group is locked by " .. player.me.username)
+                else
+                    print("can't add to group because the group is locked by another user")
                 end
             else
-                print('only groups can be parents!')
+                if secondary.type == 'group' then
+                    for id, node in pairs(home.selected) do
+                        -- Make sure no cycles
+                        local cycle = false
+                        do
+                            local curr = secondary
+                            while curr do
+                                if curr.id == node.id then
+                                    cycle = true
+                                end
+                                curr = curr.parentId and (home.selected[curr.parentId] or share.nodes[curr.parentId])
+                            end
+                        end
+                        if not cycle then
+                            -- Update local transform
+                            local secondaryTransform = getWorldSpace(secondary).transform
+                            local nodeTransform = getWorldSpace(node).transform
+                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+
+                            -- Unlink old, link new
+                            local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
+                            if prevParent then
+                                removeFromGroup(prevParent, node)
+                            end
+                            addToGroup(secondary, node)
+                        else
+                            print("can't add a node as a child of itself or one of its descendants!")
+                        end
+                    end
+                else
+                    print('only groups can be parents!')
+                end
             end
         end
         if not secondary then -- Remove parent
