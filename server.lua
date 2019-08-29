@@ -18,6 +18,10 @@ local homes = server.homes
 
 --- UTIL
 
+local function getNodeWithId(id)
+    return id and share.nodes[id]
+end
+
 
 --- LOAD
 
@@ -121,10 +125,10 @@ function server.update(dt)
         for clientId in pairs(share.players) do -- Deletions
             if homes[clientId].deleted then
                 for id in pairs(homes[clientId].deleted) do
-                    local oldNode = share.nodes[id]
+                    local oldNode = getNodeWithId(id)
                     if share.locks[id] == clientId and oldNode then -- Check lock
                         if oldNode.parentId then
-                            removeFromGroup(share.nodes[oldNode.parentId], oldNode)
+                            removeFromGroup(getNodeWithId(oldNode.parentId), oldNode)
                         end
                         share.nodes[id] = nil
                     end
@@ -143,20 +147,16 @@ function server.update(dt)
                         share.locks[id] = clientId
                     end
                     if share.locks[id] == clientId then -- Check lock
-                        local oldNode = share.nodes[id]
+                        local oldNode = getNodeWithId(id)
                         if oldNode then
                             if oldNode.parentId == newNode.parentId then -- Keep parent, check tags
-                                updateTagIndex(oldNode.parentId and share.nodes[oldNode.parentId], oldNode, newNode.tags)
+                                updateTagIndex(getNodeWithId(oldNode.parentId), oldNode, newNode.tags)
                             else -- Change parent
-                                if oldNode.parentId then
-                                    removeFromGroup(share.nodes[oldNode.parentId], oldNode)
-                                end
-                                if newNode.parentId then
-                                    addToGroup(share.nodes[newNode.parentId], newNode)
-                                end
+                                removeFromGroup(getNodeWithId(oldNode.parentId), oldNode)
+                                addToGroup(getNodeWithId(newNode.parentId), newNode)
                             end
                         elseif newNode.parentId then
-                            addToGroup(share.nodes[newNode.parentId], newNode)
+                            addToGroup(getNodeWithId(newNode.parentId), newNode)
                         end
                         share.nodes[id] = newNode -- Apply edits
                     end
@@ -167,9 +167,7 @@ function server.update(dt)
 
     do -- Run think rules
         for id, node in pairs(share.nodes) do
-            runThinkRules(node, function(id)
-                return share.nodes[id]
-            end)
+            runThinkRules(node, getNodeWithId)
         end
     end
 end
