@@ -21,6 +21,10 @@ local home = client.home
 local cameraX, cameraY = 0, 0
 local cameraW, cameraH = 800, 450
 
+local function getNodeWithId(id)
+    return id and (home.selected[id] or share.nodes[id])
+end
+
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
 do
     local cache = {}
@@ -31,7 +35,7 @@ do
     }
 
     function getParentWorldSpace(node)
-        return getWorldSpace(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]))
+        return getWorldSpace(getNodeWithId(node.parentId))
     end
 
     function getWorldSpace(node)
@@ -127,7 +131,7 @@ local function cloneSelectedNodes(node)
                 newNode.group.tagIndices = {}
             end
             if newNode.parentId then
-                addToGroup(home.selected[newNode.parentId] or share.nodes[newNode.parentId], newNode) 
+                addToGroup(getNodeWithId(node.parentId), newNode) 
             end
             home.selected = { [newId] = newNode }
         end
@@ -333,9 +337,9 @@ function client.draw()
                 love.graphics.stacked('all', function() -- Draw conflicting selection overlays
                     love.graphics.setColor(0.5, 0, 1)
                     for id in pairs(conflictingSelections) do
-                        local node = share.nodes[id]
+                        local node = getNodeWithId(id)
                         if node then
-                            drawBox(share.nodes[id])
+                            drawBox(node)
                         end
                     end
                 end)
@@ -478,6 +482,11 @@ function client.update(dt)
                     conflictingSelections[id] = nil
                 end
             end
+            for id in pairs(home.deleted) do
+                if not share.nodes[id] then
+                    home.deleted[id] = nil
+                end
+            end
         end
 
         -- do -- Acquirable conflicting selections
@@ -532,26 +541,14 @@ function client.update(dt)
             end
         end
 
-        do -- Clear deleteds
-            for id in pairs(home.deleted) do
-                if not share.nodes[id] then
-                    home.deleted[id] = nil
-                end
-            end
-        end
-
         do -- Run think rules
             for id, node in pairs(share.nodes) do
                 if not home.selected[id] then
-                    runThinkRules(node, function(id)
-                        return home.selected[id] or share.nodes[id]
-                    end)
+                    runThinkRules(node, getNodeWithId)
                 end
             end
             for id, node in pairs(home.selected) do
-                runThinkRules(node, function(id)
-                    return home.selected[id] or share.nodes[id]
-                end)
+                runThinkRules(node, getNodeWithId)
             end
         end
 
@@ -732,7 +729,7 @@ function client.keypressed(key)
     end
 
     if key == 'p' then -- Parent
-        local secondary = secondaryId and share.nodes[secondaryId]
+        local secondary = secondaryId and getNodeWithId(secondaryId)
         if secondary then -- New parent
             if share.locks[secondaryId] and share.locks[secondaryId] ~= client.id then
                 local player = share.players[share.locks[secondaryId]]
@@ -752,7 +749,7 @@ function client.keypressed(key)
                                 if curr.id == node.id then
                                     cycle = true
                                 end
-                                curr = curr.parentId and (home.selected[curr.parentId] or share.nodes[curr.parentId])
+                                curr = getNodeWithId(curr.parentId)
                             end
                         end
                         if not cycle then
@@ -763,7 +760,7 @@ function client.keypressed(key)
                             node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
 
                             -- Unlink old, link new
-                            local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
+                            local prevParent = getNodeWithId(node.parentId)
                             if prevParent then
                                 removeFromGroup(prevParent, node)
                             end
@@ -779,7 +776,7 @@ function client.keypressed(key)
         end
         if not secondary then -- Remove parent
             for id, node in pairs(home.selected) do
-                local prevParent = node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId])
+                local prevParent = getNodeWithId(node.parentId)
                 local nodeTransform = getWorldSpace(node).transform
                 node.x, node.y = nodeTransform:transformPoint(0, 0)
                 node.rotation = getTransformRotation(nodeTransform)
@@ -912,7 +909,7 @@ function client.uiupdate()
                                                     print("can't change the tags of this node because its parent is locked by another user")
                                                 end
                                             else
-                                                updateTagIndex(node.parentId and (home.selected[node.parentId] or share.nodes[node.parentId]), node, newTags)
+                                                updateTagIndex(getNodeWithId(node.parentId), node, newTags)
                                                 node.tags = newTags
                                             end
                                         end
@@ -1201,7 +1198,7 @@ function client.uiupdate()
 
                             ui.tab('children', function()
                                 for childId in pairs(node.group.childrenIds) do
-                                    local child = share.nodes[childId]
+                                    local child = getNodeWithId(childId)
                                     if child then
                                         uiRow('child-' .. childId, function()
                                             ui.markdown(child.type)
@@ -1229,7 +1226,7 @@ function client.uiupdate()
                 end
 
                 for id in pairs(conflictingSelections) do
-                    local node = share.nodes[id]
+                    local node = getNodeWithId(id)
                     if node then
                         ui.box('locked-' .. id, { border = '1px solid yellow', padding = 2 }, function()
                             local warn
