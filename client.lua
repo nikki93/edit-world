@@ -84,6 +84,7 @@ local function newNode()
     local newNode = home.selected[id]
 
     newNode.id = id
+    newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
     newNode.x, newNode.y = cameraX, cameraY
 end
@@ -111,6 +112,7 @@ local function cloneSelectedNodes(node)
         local newId = uuid()
         local newNode = cloneValue(node)
         newNode.id = newId
+        newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
         if newNode.type == 'group' then -- Shallow clone only for now
             newNode.group.childrenIds = {}

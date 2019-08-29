@@ -198,16 +198,31 @@ do
             upper = string.upper },
         table = { insert = table.insert, maxn = table.maxn, remove = table.remove,
             sort = table.sort },
-        math = { abs = math.abs, acos = math.acos, asin = math.asin,
+        math = {
+            -- Omit `math.random` in favor of `:random()` on nodes
+            abs = math.abs, acos = math.acos, asin = math.asin,
             atan = math.atan, atan2 = math.atan2, ceil = math.ceil, cos = math.cos,
             cosh = math.cosh, deg = math.deg, exp = math.exp, floor = math.floor,
             fmod = math.fmod, frexp = math.frexp, huge = math.huge,
             ldexp = math.ldexp, log = math.log, log10 = math.log10, max = math.max,
             min = math.min, modf = math.modf, pi = math.pi, pow = math.pow,
-            rad = math.rad, random = math.random, sin = math.sin, sinh = math.sinh,
-            sqrt = math.sqrt, tan = math.tan, tanh = math.tanh },
-        os = { clock = os.clock, difftime = os.difftime, time = os.time },
-        love = { math = love.math },
+            rad = math.rad, sin = math.sin, sinh = math.sinh,
+            sqrt = math.sqrt, tan = math.tan, tanh = math.tanh,
+        },
+        love = {
+            math = {
+                -- Omit rng functions in favor of `:random()`, `:randomNormal()` on nodes
+                compress = love.math.compress,
+                decompress = love.math.decompress,
+                gammaToLinear = love.math.gammaToLinear,
+                isConvex = love.math.isConvex,
+                linearToGamma = love.math.linearToGamma,
+                newBezierCurve = love.math.newBezierCurve,
+                newTransform = love.math.newTransform,
+                noise = love.math.noise,
+                triangulate = love.math.triangulate,
+            },
+        },
     }, {
         __newindex = function(t, k)
             error("global variable '" .. k .. "' not allowed!", 2)
@@ -302,6 +317,27 @@ do
             end
         end
         return child
+    end
+
+
+    do
+        local rng = love.math.newRandomGenerator()
+
+        function nodeProxyIndex:random(...)
+            local node = self.node
+            rng:setState(node.rngState)
+            local r = rng:random(...)
+            node.rngState = rng:getState()
+            return r
+        end
+
+        function nodeProxyIndex:randomNormal(...)
+            local node = self.node
+            rng:setState(node.rngState)
+            local r = rng:randomNormal(...)
+            node.rngState = rng:getState()
+            return r
+        end
     end
 
 
