@@ -18,6 +18,9 @@ local home = client.home
 
 --- LOCALS
 
+local parentChildIndex = {}     -- `parent.id` -> `child.id` -> `true`, for all `child.parentId == parent.id`
+local parentTagChildIndex = {}  -- `parent.id` -> `tag` -> `child.id` -> `true`, for all `child.tags[tag] and child.parentId == parent.id`
+
 local mode = 'none'
 
 local selections = {} -- node id -> `true` for selections we control
@@ -31,7 +34,7 @@ local cameraW, cameraH = 800, 450
 --- UTIL
 
 local function getNodeWithId(id)
-    return id and (home.controlled[id] or share.nodes[id])
+    return id and ((home.controlled and home.controlled[id]) or (share.nodes and share.nodes[id]))
 end
 
 local getParentWorldSpace, getWorldSpace, clearWorldSpace
@@ -99,6 +102,60 @@ local function hasChildren(idOrNode)
     return false
 end
 
+local function updateIndices(oldParentId, newParentId, newNode)
+    local nodeId = newNode.id
+    if oldParentId then
+        if oldParentId ~= newParentId then -- Parent changed, remove from `parentChildIndex` for old parent
+            local childIndex = parentChildIndex[oldParentId]
+            if childIndex then
+                childIndex[nodeId] = nil
+                if not next(childIndex) then -- Empty?
+                    parentChildIndex[oldParentId] = nil
+                end
+            end
+        end
+
+        local tagChildIndex = parentTagChildIndex[oldParentId]
+        if tagChildIndex then -- Remove from `parentTagChildIndex` for old parent
+            for tag, childIndex in pairs(tagChildIndex) do -- Need to go through every tag in the index
+                childIndex[nodeId] = nil
+                if not next(childIndex) then
+                    tagChildIndex[tag] = nil
+                end
+            end
+            if not next(tagChildIndex) then
+                parentTagChildIndex[oldParentId] = nil
+            end
+        end
+    end
+    if newParentId then
+        if oldParentId ~= newParentId then -- Parent changed, add to `parentChildIndex` for new parent
+            local childIndex = parentChildIndex[newParentId]
+            if not childIndex then
+                childIndex = {}
+                parentChildIndex[newParentId] = childIndex
+            end
+            childIndex[nodeId] = true
+        end
+
+        local tagChildIndex 
+        for tag in pairs(newNode.tags) do -- Add to `parentChildIndex` for new parent
+            local tagChildIndex = tagChildIndex or parentTagChildIndex[newParentId]
+            if not tagChildIndex then
+                tagChildIndex = {}
+                parentTagChildIndex[newParentId] = tagChildIndex
+            end
+            local childIndex = tagChildIndex[tag]
+            if not childIndex then
+                childIndex = {}
+                tagChildIndex[tag] = childIndex
+            end
+            childIndex[nodeId] = true
+        end
+    end
+    newNode.parentId = newParentId
+end
+
 local function deselectAll()
     selections = {}
     conflictingSelections = {}
@@ -133,6 +190,10 @@ local function deleteSelectedNodes()
             print("can't delete a group that has children -- you must either detach or delete the children first!")
             return
         end
+        local node = getNodeWithId(id)
+        if node then
+            updateIndices(node.parentId, nil, node)
+        end
         home.deleted[id] = true
         selections[id] = nil
         home.controlled[id] = nil
@@ -142,34 +203,26 @@ end
 local function cloneSelectedNodes()
     for id in pairs(selections) do
         local node = getNodeWithId(id)
-        if node.parentId and share.locks[node.parentId] and share.locks[node.parentId] ~= client.id then
-            local player = share.players[share.locks[node.parentId]]
-            if player and player.me and player.me.username then
-                print("can't clone this node because its parent is locked by " .. player.me.username)
-            else
-                print("can't clone this node because its parent is locked by another user")
-            end
-        else
-            -- Deselect all
-            deselectAll()
 
-            -- Clone
-            local newId = uuid()
-            local newNode = cloneValue(node)
-            newNode.id = newId
-            newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
-            newNode.x, newNode.y = newNode.x + G, newNode.y + G
-            if newNode.type == 'group' then -- Shallow clone only for now
-                newNode.group.childrenIds = {}
-                newNode.group.tagIndices = {}
-            end
-            if newNode.parentId then
-                addToGroup(getNodeWithId(node.parentId), newNode) 
-            end
+        -- Deselect all
+        deselectAll()
 
-            -- Select
-            selectOnly(newNode)
+        -- Clone
+        local newId = uuid()
+        local newNode = cloneValue(node)
+        newNode.id = newId
+        newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
+        newNode.x, newNode.y = newNode.x + G, newNode.y + G
+        if newNode.type == 'group' then -- Shallow clone only for now
+            newNode.group.childrenIds = {}
+            newNode.group.tagIndices = {}
         end
+        if newNode.parentId then
+            updateIndices(nil, newNode.parentId, newNode)
+        end
+
+        -- Select
+        selectOnly(newNode)
     end
 end
 
@@ -571,11 +624,11 @@ function client.update(dt)
         do -- Run think rules
             for id, node in pairs(share.nodes) do
                 if not home.controlled[id] then
-                    runThinkRules(node, getNodeWithId)
+                    runThinkRules(node, getNodeWithId, { parentChildIndex = parentChildIndex, parentTagChildIndex = parentTagChildIndex })
                 end
             end
             for id, node in pairs(home.controlled) do
-                runThinkRules(node, getNodeWithId)
+                runThinkRules(node, getNodeWithId, { parentChildIndex = parentChildIndex, parentTagChildIndex = parentTagChildIndex })
             end
         end
 
@@ -765,50 +818,37 @@ function client.keypressed(key)
     if key == 'p' then -- Parent
         local secondaryNode = secondarySelection and getNodeWithId(secondarySelection)
         if secondaryNode then -- New parent
-            if share.locks[secondarySelection] and share.locks[secondarySelection] ~= client.id then
-                local player = share.players[share.locks[secondarySelection]]
-                if player and player.me and player.me.username then
-                    print("can't add to group because the group is locked by " .. player.me.username)
-                else
-                    print("can't add to group because the group is locked by another user")
-                end
-            else
-                if secondaryNode.type == 'group' then
-                    for id in pairs(selections) do
-                        local node = home.controlled[id]
-                        if node then
-                            -- Make sure no cycles
-                            local cycle = false
-                            do
-                                local curr = secondaryNode
-                                while curr do
-                                    if curr.id == node.id then
-                                        cycle = true
-                                    end
-                                    curr = getNodeWithId(curr.parentId)
+            if secondaryNode.type == 'group' then
+                for id in pairs(selections) do
+                    local node = home.controlled[id]
+                    if node then
+                        -- Make sure no cycles
+                        local cycle = false
+                        do
+                            local curr = secondaryNode
+                            while curr do
+                                if curr.id == node.id then
+                                    cycle = true
                                 end
-                            end
-                            if not cycle then
-                                -- Update local transform
-                                local secondaryTransform = getWorldSpace(secondaryNode).transform
-                                local nodeTransform = getWorldSpace(node).transform
-                                node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
-                                node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
-
-                                -- Unlink old, link new
-                                local prevParent = getNodeWithId(node.parentId)
-                                if prevParent then
-                                    removeFromGroup(prevParent, node)
-                                end
-                                addToGroup(secondaryNode, node)
-                            else
-                                print("can't add a node as a child of itself or one of its descendants!")
+                                curr = getNodeWithId(curr.parentId)
                             end
                         end
+                        if not cycle then
+                            -- Update local transform
+                            local secondaryTransform = getWorldSpace(secondaryNode).transform
+                            local nodeTransform = getWorldSpace(node).transform
+                            node.x, node.y = secondaryTransform:inverseTransformPoint(nodeTransform:transformPoint(0, 0))
+                            node.rotation = getTransformRotation(nodeTransform) - getTransformRotation(secondaryTransform)
+
+                            -- Unlink old, link new
+                            updateIndices(node.parentId, secondarySelection, node)
+                        else
+                            print("can't add a node as a child of itself or one of its descendants!")
+                        end
                     end
-                else
-                    print('only groups can be parents!')
                 end
+            else
+                print('only groups can be parents!')
             end
         else -- Remove parent
             for id in pairs(selections) do
@@ -818,7 +858,7 @@ function client.keypressed(key)
                     local nodeTransform = getWorldSpace(node).transform
                     node.x, node.y = nodeTransform:transformPoint(0, 0)
                     node.rotation = getTransformRotation(nodeTransform)
-                    removeFromGroup(prevParent, node)
+                    updateIndices(node.parentId, nil, node)
                 end
             end
         end
@@ -927,17 +967,8 @@ function client.uiupdate()
                                 if tagsChanged then
                                     ui.box('tags-button', { flexDirection = 'row', marginLeft = 20, alignItems = 'flex-end' }, function()
                                         if ui.button('apply') then
-                                            if node.parentId and share.locks[node.parentId] and share.locks[node.parentId] ~= client.id then
-                                                local player = share.players[share.locks[node.parentId]]
-                                                if player and player.me and player.me.username then
-                                                    print("can't change the tags of this node because its parent is locked by " .. player.me.username)
-                                                else
-                                                    print("can't change the tags of this node because its parent is locked by another user")
-                                                end
-                                            else
-                                                updateTagIndex(getNodeWithId(node.parentId), node, newTags)
-                                                node.tags = newTags
-                                            end
+                                            node.tags = newTags
+                                            updateIndices(node.parentId, node.parentId, node)
                                         end
                                     end)
                                 end
@@ -1223,7 +1254,7 @@ function client.uiupdate()
                             end)
 
                             ui.tab('children', function()
-                                for childId in pairs(node.group.childrenIds) do
+                                for childId in pairs(parentChildIndex[node.id] or {}) do
                                     local child = getNodeWithId(childId)
                                     if child then
                                         uiRow('child-' .. childId, function()
@@ -1237,7 +1268,7 @@ function client.uiupdate()
                                                 local childTransform = getWorldSpace(child).transform
                                                 child.x, child.y = childTransform:transformPoint(0, 0)
                                                 child.rotation = getTransformRotation(childTransform)
-                                                removeFromGroup(node, child)
+                                                updateIndices(child.parentId, nil, child)
                                             end
                                         end)
                                     end
@@ -1378,8 +1409,37 @@ in the 'world' tab, hit **'post world!'** to create a post storing the world. th
 end
 
 
---- CHANGING
+--- CHANGING / CHANGED
 
--- function client.changing(diff)
---     print('diff', serpent.block(diff))
--- end
+local oldParentIds = {}
+
+function client.changing(diff)
+    if diff.nodes then
+        for id, nodeDiff in pairs(diff.nodes) do
+            if not (home.controlled and home.controlled[id]) then
+                if nodeDiff.parentId then -- Save old parent id
+                    local oldNode = getNodeWithId(id)
+                    if oldNode and oldNode.parentId then
+                        oldParentIds[id] = oldNode.parentId
+                    end
+                end
+            end
+        end
+    end
+end
+
+function client.changed(diff)
+    if diff.nodes then
+        for id, nodeDiff in pairs(diff.nodes) do
+            if not (home.controlled and home.controlled[id]) then
+                local node = share.nodes[id]
+                if nodeDiff.parentId then
+                    updateIndices(oldParentIds[id], node.parentId, node)
+                elseif nodeDiff.tags then
+                    updateIndices(node.parentId, node.parentId, node)
+                end
+            end
+        end
+    end
+    oldParentIds = {}
+end

@@ -16,6 +16,12 @@ local share = server.share
 local homes = server.homes
 
 
+--- LOCALS
+
+local parentChildIndex = {}     -- `parent.id` -> `child.id` -> `true`, for all `child.parentId == parent.id`
+local parentTagChildIndex = {}  -- `parent.id` -> `tag` -> `child.id` -> `true`, for all `child.tags[tag] and child.parentId == parent.id`
+
+
 --- UTIL
 
 local function getNodeWithId(id)
@@ -99,6 +105,33 @@ function server.receive(clientId, msg, ...)
                 end
             end
         end
+
+        for id, node in pairs(share.nodes) do
+            local newParentId = node.parentId
+            if newParentId then
+                local childIndex = parentChildIndex[newParentId]
+                if not childIndex then
+                    childIndex = {}
+                    parentChildIndex[newParentId] = childIndex
+                end
+                childIndex[id] = true
+
+                local tagChildIndex = parentTagChildIndex[newParentId]
+                if not tagChildIndex then
+                    tagChildIndex = {}
+                    parentTagChildIndex[newParentId] = tagChildIndex
+                end
+
+                for tag in pairs(node.tags) do
+                    local childIndex = tagChildIndex[tag]
+                    if not childIndex then
+                        childIndex = {}
+                        tagChildIndex[tag] = childIndex
+                    end
+                    childIndex[id] = true
+                end
+            end
+        end
     end
 end
 
@@ -127,8 +160,30 @@ function server.update(dt)
                 for id in pairs(homes[clientId].deleted) do
                     local oldNode = getNodeWithId(id)
                     if share.locks[id] == clientId and oldNode then -- Check lock
-                        if oldNode.parentId then
-                            removeFromGroup(getNodeWithId(oldNode.parentId), oldNode)
+                        local oldParentId = oldNode.parentId
+                        if oldParentId then
+                            local childIndex = parentChildIndex[oldParentId]
+                            if childIndex then
+                                childIndex[nodeId] = nil
+                                if not next(childIndex) then -- Empty?
+                                    parentChildIndex[oldParentId] = nil
+                                end
+                            end
+                            local tagChildIndex = parentTagChildIndex[oldParentId]
+                            if tagChildIndex then
+                                for tag in pairs(oldNode.tags) do
+                                    local childIndex = tagChildIndex[tag]
+                                    if childIndex then
+                                        childIndex[nodeId] = nil
+                                        if not next(childIndex) then
+                                            tagChildIndex[tag] = nil
+                                        end
+                                    end
+                                end
+                                if not next(tagChildIndex) then
+                                    parentTagChildIndex[oldParentId] = nil
+                                end
+                            end
                         end
                         share.nodes[id] = nil
                     end
@@ -140,34 +195,91 @@ function server.update(dt)
                 share.locks[id] = nil
             end
         end
-        for clientId in pairs(share.players) do -- Edits
-            if homes[clientId].controlled then
-                for id, newNode in pairs(homes[clientId].controlled) do
-                    if not share.locks[id] then -- Acquire lock
-                        share.locks[id] = clientId
-                    end
-                    if share.locks[id] == clientId then -- Check lock
-                        local oldNode = getNodeWithId(id)
-                        if oldNode then
-                            if oldNode.parentId == newNode.parentId then -- Keep parent, check tags
-                                updateTagIndex(getNodeWithId(oldNode.parentId), oldNode, newNode.tags)
-                            else -- Change parent
-                                removeFromGroup(getNodeWithId(oldNode.parentId), oldNode)
-                                addToGroup(getNodeWithId(newNode.parentId), newNode)
-                            end
-                        elseif newNode.parentId then
-                            addToGroup(getNodeWithId(newNode.parentId), newNode)
-                        end
-                        share.nodes[id] = newNode -- Apply edits
-                    end
-                end
-            end
-        end
     end
 
     do -- Run think rules
         for id, node in pairs(share.nodes) do
-            runThinkRules(node, getNodeWithId)
+            runThinkRules(node, getNodeWithId, { parentChildIndex = parentChildIndex, parentTagChildIndex = parentTagChildIndex })
+        end
+    end
+end
+
+
+--- CHANGING
+
+function server.changed(clientId, homeDiff)
+    local home = homes[clientId]
+    local nodeDiffs = homeDiff.controlled
+    if nodeDiffs then
+        for nodeId, nodeDiff in pairs(nodeDiffs) do
+            if not share.locks[nodeId] or share.locks[nodeId] == clientId then -- Not locked, or locked by us
+                share.locks[nodeId] = clientId -- Acquire lock
+
+                local oldNode = getNodeWithId(nodeId)
+                local newNode = home.controlled[nodeId]
+
+                local oldParentId = oldNode and oldNode.parentId
+                if oldParentId then
+                    if nodeDiff.parentId then -- Parent changed, remove from `parentChildIndex` for old parent
+                        local childIndex = parentChildIndex[oldParentId]
+                        if childIndex then
+                            childIndex[nodeId] = nil
+                            if not next(childIndex) then -- Empty?
+                                parentChildIndex[oldParentId] = nil
+                            end
+                        end
+                    end
+
+                    if nodeDiff.parentId or nodeDiff.tags then -- Parent or tags changed, remove from `parentTagChildIndex` for old parent
+                        local tagChildIndex = parentTagChildIndex[oldParentId]
+                        if tagChildIndex then
+                            for tag in pairs(oldNode.tags) do
+                                local childIndex = tagChildIndex[tag]
+                                if childIndex then
+                                    childIndex[nodeId] = nil
+                                    if not next(childIndex) then
+                                        tagChildIndex[tag] = nil
+                                    end
+                                end
+                            end
+                            if not next(tagChildIndex) then
+                                parentTagChildIndex[oldParentId] = nil
+                            end
+                        end
+                    end
+                end
+
+                local newParentId = newNode.parentId
+                if newParentId then
+                    if nodeDiff.parentId then -- Parent changed, add to `parentChildIndex` for new parent
+                        local childIndex = parentChildIndex[newParentId]
+                        if not childIndex then
+                            childIndex = {}
+                            parentChildIndex[newParentId] = childIndex
+                        end
+                        childIndex[nodeId] = true
+                    end
+
+                    if nodeDiff.parentId or nodeDiff.tags then -- Parent or tags changed, add to `parentTagChildIndex` for new parent
+                        local tagChildIndex = parentTagChildIndex[newParentId]
+                        if not tagChildIndex then
+                            tagChildIndex = {}
+                            parentTagChildIndex[newParentId] = tagChildIndex
+                        end
+
+                        for tag in pairs(newNode.tags) do
+                            local childIndex = tagChildIndex[tag]
+                            if not childIndex then
+                                childIndex = {}
+                                tagChildIndex[tag] = childIndex
+                            end
+                            childIndex[nodeId] = true
+                        end
+                    end
+                end
+
+                share.nodes[nodeId] = newNode
+            end
         end
     end
 end

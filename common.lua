@@ -75,8 +75,6 @@ NODE_TYPE_DEFAULTS = {
         url = nil,
     },
     group = {
-        childrenIds = {}, -- `childId` -> `true`
-        tagIndices = {}, -- `tag` -> `childId` -> `true`
         rules = {},
     },
 }
@@ -124,54 +122,6 @@ end
 
 
 --- COMMON LOGIC
-
-function updateTagIndex(parent, node, newTags)
-    if not (parent and parent.type == 'group') then
-        return
-    end
-    if node.tags ~= newTags then
-        for tag in pairs(node.tags) do
-            if not newTags[tag] then
-                local tagIndex = parent.group.tagIndices[tag]
-                if tagIndex then
-                    tagIndex[node.id] = nil
-                    local tagIndexEmpty = true
-                    for id in pairs(tagIndex) do
-                        tagIndexEmpty = false
-                        break
-                    end
-                    if tagIndexEmpty then
-                        parent.group.tagIndices[tag] = nil
-                    end
-                end
-            end
-        end
-    end
-    for tag in pairs(newTags) do
-        local tagIndex = parent.group.tagIndices[tag]
-        if not tagIndex then
-            tagIndex = {}
-            parent.group.tagIndices[tag] = tagIndex
-        end
-        tagIndex[node.id] = true
-    end
-end
-
-function addToGroup(parent, child)
-    if parent and parent.type == 'group' then
-        child.parentId = parent.id
-        parent.group.childrenIds[child.id] = true
-        updateTagIndex(parent, child, child.tags)
-    end
-end
-
-function removeFromGroup(parent, child)
-    if parent and child.parentId == parent.id then
-        child.parentId = nil
-        parent.group.childrenIds[child.id] = nil
-        updateTagIndex(parent, child, {})
-    end
-end
 
 function getRuleDescription(rule)
     return rule.description == '' and RULE_DESCRIPTION_DEFAULTS[rule.action] or rule.description
@@ -264,10 +214,14 @@ do
         if node.type ~= 'group' then
             return {}
         end
+        local childIndex = self.indices.parentChildIndex[node.id]
+        if not childIndex then
+            return {}
+        end
         local children = {}
         local getNodeWithId = self.getNodeWithId
-        for childId in pairs(node.group.childrenIds) do
-            children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        for childId in pairs(childIndex) do
+            children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId, self.indices)
         end
         return children
     end
@@ -277,9 +231,13 @@ do
         if node.type ~= 'group' then
             return nil
         end
+        local childIndex = self.indices.parentChildIndex[node.id]
+        if not childIndex then
+            return nil
+        end
         local getNodeWithId = self.getNodeWithId
-        if node.group.childrenIds[childId] then
-            return getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        if childIndex[childId] then
+            return getNodeProxy(getNodeWithId(childId), getNodeWithId, self.indices)
         end
     end
 
@@ -288,14 +246,18 @@ do
         if node.type ~= 'group' then
             return {}
         end
-        local tagIndex = node.group.tagIndices[tag]
-        if not tagIndex then
+        local tagChildIndex = self.indices.parentTagChildIndex[node.id]
+        if not tagChildIndex then
+            return {}
+        end
+        local childIndex = tagChildIndex[tag]
+        if not childIndex then
             return {}
         end
         local children = {}
         local getNodeWithId = self.getNodeWithId
-        for childId in pairs(tagIndex) do
-            children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId)
+        for childId in pairs(childIndex) do
+            children[childId] = getNodeProxy(getNodeWithId(childId), getNodeWithId, self.indices)
         end
         return children
     end
@@ -305,17 +267,21 @@ do
         if node.type ~= 'group' then
             return nil
         end
-        local tagIndex = node.group.tagIndices[tag]
-        if not tagIndex then
+        local tagChildIndex = self.indices.parentTagChildIndex[node.id]
+        if not tagChildIndex then
+            return nil
+        end
+        local childIndex = tagChildIndex[tag]
+        if not childIndex then
             return nil
         end
         local child = nil
         local getNodeWithId = self.getNodeWithId
-        for childId in pairs(tagIndex) do
+        for childId in pairs(childIndex) do
             if child then
                 error("multiple children with tag '" .. tag .. "'")
             else
-                child = getNodeProxy(getNodeWithId(childId), getNodeWithId)
+                child = getNodeProxy(getNodeWithId(childId), getNodeWithId, self.indices)
             end
         end
         return child
@@ -641,13 +607,14 @@ do
         end,
      }
 
-    function getNodeProxy(node, getNodeWithId)
+    function getNodeProxy(node, getNodeWithId, indices)
         if node == nil then
             return nil
         end
         return setmetatable({
             node = node,
             getNodeWithId = getNodeWithId,
+            indices = indices,
         }, nodeProxyMeta)
     end
 end
@@ -657,7 +624,7 @@ do
 
     local lastErrPrintTime = {}
 
-    function runThinkRules(node, getNodeWithId)
+    function runThinkRules(node, getNodeWithId, indices)
         local dt = love.timer.getDelta()
 
         if node.type == 'group' then
@@ -677,7 +644,7 @@ do
                         local compiled = cached.compiled
                         if compiled then
                             local succeeded
-                            succeeded, err = pcall(compiled, getNodeProxy(node, getNodeWithId), dt)
+                            succeeded, err = pcall(compiled, getNodeProxy(node, getNodeWithId, indices), dt)
                         end
 
                         if err then
