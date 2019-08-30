@@ -1416,7 +1416,7 @@ local oldParentIds = {}
 function client.changing(diff)
     if diff.nodes then
         for id, nodeDiff in pairs(diff.nodes) do
-            if not (home.controlled and home.controlled[id]) then
+            if id ~= '__exact' and not (home.controlled and home.controlled[id]) then
                 if nodeDiff.parentId then -- Save old parent id
                     local oldNode = getNodeWithId(id)
                     if oldNode and oldNode.parentId then
