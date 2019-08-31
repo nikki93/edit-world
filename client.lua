@@ -228,23 +228,6 @@ local function cloneSelectedNodes()
 end
 
 
---- LOAD
-
-local theQuad
-
-local defaultFont
-
-local defaultImage
-
-function client.load()
-    theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
-
-    defaultFont = love.graphics.newFont(14)
-    
-    defaultImage = love.graphics.newImage('checkerboard.png')
-end
-
-
 --- CONNECT
 
 function client.connect()
@@ -317,6 +300,14 @@ local function drawBox(node)
         love.graphics.applyTransform(getWorldSpace(node).transform)
         love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
     end)
+end
+
+local theQuad, defaultFont, defaultImage
+
+if love.graphics then
+    theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
+    defaultFont = love.graphics.newFont(14)
+    defaultImage = love.graphics.newImage('checkerboard.png')
 end
 
 function client.draw()
