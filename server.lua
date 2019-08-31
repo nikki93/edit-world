@@ -249,7 +249,7 @@ function server.changed(clientId, homeDiff)
                     end
                 end
 
-                local newParentId = newNode.parentId
+                local newParentId = newNode and newNode.parentId
                 if newParentId then
                     if nodeDiff.parentId then -- Parent changed, add to `parentChildIndex` for new parent
                         local childIndex = parentChildIndex[newParentId]
