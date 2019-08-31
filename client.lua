@@ -95,7 +95,8 @@ end
 local function hasChildren(idOrNode)
     local node = type(idOrNode) ~= 'string' and idOrNode or getNodeWithId(idOrNode)
     if node.type == 'group'then
-        for childId in pairs(node.group.childrenIds) do
+        local childIndex = parentChildIndex[node.id]
+        if childIndex and next(childIndex) then
             return true
         end
     end
