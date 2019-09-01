@@ -207,17 +207,38 @@ end
 
 --- CHANGING
 
-function server.changed(clientId, homeDiff)
+local function applyDiff(t, diff)
+    if diff == nil then return t end
+    if diff.__exact then
+        diff.__exact = nil
+        return diff
+    end
+    t = (type(t) == 'table' or type(t) == 'userdata') and t or {}
+    for k, v in pairs(diff) do
+        if type(v) == 'table' then
+            local r = applyDiff(t[k], v)
+            if r ~= t[k] then
+                t[k] = r
+            end
+        elseif v == DIFF_NIL then
+            t[k] = nil
+        else
+            t[k] = v
+        end
+    end
+    return t
+end
+
+function server.changing(clientId, homeDiff)
     local home = homes[clientId]
     local nodeDiffs = homeDiff.controlled
     if nodeDiffs then
+        local rootExact = homeDiff.__exact or nodeDiffs.__exact
         for nodeId, nodeDiff in pairs(nodeDiffs) do
-            if not share.locks[nodeId] or share.locks[nodeId] == clientId then -- Not locked, or locked by us
+            if nodeId ~= '__exact' and not share.locks[nodeId] or share.locks[nodeId] == clientId then -- Not locked, or locked by us
                 share.locks[nodeId] = clientId -- Acquire lock
 
-                local oldNode = getNodeWithId(nodeId)
-                local newNode = home.controlled[nodeId]
-
+                local oldNode = share.nodes[nodeId]
                 local oldParentId = oldNode and oldNode.parentId
                 if oldParentId then
                     if nodeDiff.parentId then -- Parent changed, remove from `parentChildIndex` for old parent
@@ -249,6 +270,19 @@ function server.changed(clientId, homeDiff)
                     end
                 end
 
+                local newNode
+                if rootExact or nodeDiff.__exact then
+                    nodeDiff.__exact = nil
+                    newNode = nodeDiff
+                    share.nodes[nodeId] = newNode
+                    nodeDiff.__exact = true
+                elseif nodeDiff == '__NIL' then
+                    newNode = nil
+                    share.nodes[nodeId] = nil
+                else
+                    share.nodes[nodeId] = applyDiff(oldNode, nodeDiff)
+                    newNode = share.nodes[nodeId]
+                end
                 local newParentId = newNode and newNode.parentId
                 if newParentId then
                     if nodeDiff.parentId then -- Parent changed, add to `parentChildIndex` for new parent
@@ -277,8 +311,6 @@ function server.changed(clientId, homeDiff)
                         end
                     end
                 end
-
-                share.nodes[nodeId] = newNode
             end
         end
     end
