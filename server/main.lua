@@ -1,5 +1,6 @@
 require 'server.init' -- Must be called first!
 
+-- Top-level events
 require 'server.load'
 require 'server.connect'
 require 'server.disconnect'
