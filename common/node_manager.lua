@@ -1,6 +1,6 @@
 local table_utils = require 'common.table_utils'
 local node_types = require 'common.node_types'
-local libs = require 'common.libs'
+local lib = require 'common.lib'
 
 
 local node_manager = {}
@@ -43,10 +43,10 @@ end
 
 
 function NodeManager:new(opts)
-    local newId = uuid()
+    local id = lib.uuid()
 
     local newNode = table_utils.clone(node_types.base.DEFAULTS)
-    newNode.id = newId
+    newNode.id = id
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     newNode[newNode.type] = node_types[newNode.type].DEFAULTS
 
@@ -64,10 +64,10 @@ function NodeManager:new(opts)
 end
 
 function NodeManager:clone(node)
-    local newId = uuid()
+    local id = lib.uuid()
 
     local newNode = table_utils.clone(node)
-    newNode.id = newId
+    newNode.id = id
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     if newNode.parentId then
         self:trackParent(newNode)
@@ -89,9 +89,9 @@ function NodeManager:delete(node)
     local parentId = node.parentId
     if parentId then
         for tag in pairs(node.tags) do
-            self:untrackTag(nodeId, parentId, tag)
+            self:untrackTag(id, parentId, tag)
         end
-        self:untrackParent(nodeId, parentId)
+        self:untrackParent(id, parentId)
     end
 
     self.proxies[id] = nil
@@ -217,8 +217,8 @@ function NodeManager:trackDiff(id, diff, rootExact)
                     end
                 end
             else -- Diff'd new tags
-                for tag in pairs(node.tags) do 
-                    if diff.tags[tag] ~= libs.state.DIFF_NIL then -- Old tag and not removed in new
+                for tag in pairs(node.tags) do
+                    if diff.tags[tag] ~= lib.state.DIFF_NIL then -- Old tag and not removed in new
                         self:trackTag(id, newParentId, tag)
                     end
                 end
@@ -233,30 +233,30 @@ function NodeManager:trackDiff(id, diff, rootExact)
             if rootExact or diff.__exact or diff.tags.__exact then -- Exact new tags
                 for tag in pairs(node.tags) do
                     if not diff.tags[tag] then -- Old tag and removed in new
-                        self:untrackTag(nodeId, parentId, tag)
+                        self:untrackTag(id, parentId, tag)
                     end
                 end
                 for tag in pairs(diff.tags) do
                     if tag ~= '__exact' and not node.tags[tag] then -- New tag
-                        self:trackTag(nodeId, parentId, tag)
+                        self:trackTag(id, parentId, tag)
                     end
                 end
             else
                 for tag, v in pairs(diff.tags) do
-                    if v == libs.state.DIFF_NIL then -- Tag removed
-                        self:untrackTag(nodeId, parentId, tag)
+                    if v == lib.state.DIFF_NIL then -- Tag removed
+                        self:untrackTag(id, parentId, tag)
                     else -- Tag added
-                        self:trackTag(nodeId, parentId, tag)
+                        self:trackTag(id, parentId, tag)
                     end
                 end
             end
         end
 
         if diff.deletion then
-            self:trackDeletion(id, deletion)
+            self:trackDeletion(id, diff.deletion)
         end
     else -- New node
-        if dif.parentId then
+        if diff.parentId then
             self:trackParent(id, diff.parentId)
             self:trackTags(id, diff.parentId, diff.tags)
         end

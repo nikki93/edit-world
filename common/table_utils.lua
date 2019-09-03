@@ -4,14 +4,14 @@ local lib = require 'common.lib'
 local table_utils = {}
 
 
-function table_utils.clone()
+function table_utils.clone(t)
     local typ = type(t)
     if typ == 'nil' or typ == 'boolean' or typ == 'number' or typ == 'string' then
         return t
     elseif typ == 'table' or typ == 'userdata' then
         local u = {}
         for k, v in pairs(t) do
-            u[cloneValue(k)] = cloneValue(v)
+            u[table_utils.clone(k)] = table_utils.clone(v)
         end
         return u
     else

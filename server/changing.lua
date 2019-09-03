@@ -1,6 +1,6 @@
 local server = require 'server.init'
 local locals = require 'server.locals'
-local libs = require 'common.libs'
+local lib = require 'common.lib'
 local table_utils = require 'common.table_utils'
 
 
@@ -21,7 +21,7 @@ function server.changing(clientId, homeDiff)
         for nodeId, nodeDiff in pairs(homeDiff.controlled) do
             if nodeId ~= '__exact' then
                 if locals.nodeManager:lock(nodeId, clientId) then
-                    if nodeDiff ~= libs.state.DIFF_NIL then -- Track and apply a controlled change
+                    if nodeDiff ~= lib.state.DIFF_NIL then -- Track and apply a controlled change
                         locals.nodeManager:trackDiff(nodeId, nodeDiff, rootExact)
                         if rootExact then
                             share.nodes[nodeId] = nodeDiff

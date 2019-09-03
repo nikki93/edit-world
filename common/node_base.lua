@@ -10,8 +10,8 @@ node_base.DEFAULTS = {
     y = 0,
     rotation = 0,
     depth = 0,
-    width = 4 * G,
-    height = 4 * G,
+    width = 4,
+    height = 4,
 }
 
 
