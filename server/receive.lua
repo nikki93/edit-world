@@ -10,7 +10,7 @@ function server.receive(clientId, msg, ...)
         share.settings[name] = value
     end
 
-    if mgs == 'postOpened' then
+    if msg == 'postOpened' then
         -- TODO(nikki): Load data
     end
 end
