@@ -77,10 +77,6 @@ function NodeManager:clone(node)
 end
 
 
-function NodeManager:trackDeletion(id, deletion)
-    self.deletions[id] = deletion
-end
-
 function NodeManager:delete(node)
     node.deletion = DELETION_DELETED
 
@@ -104,6 +100,10 @@ function NodeManager:delete(node)
         self.shared[id] = nil
         self.controlled[id] = nil
     end
+end
+
+function NodeManager:trackDeletion(id, deletion)
+    self.deletions[id] = deletion
 end
 
 function NodeManager:processDeletions()
