@@ -9,26 +9,30 @@ local homes = server.homes
 
 
 function server.changing(clientId, homeDiff)
-    if homeDiff.controlled then
-        local rootExact = homeDiff.__exact or homeDiff.controlled.__exact
+    if homeDiff.nodes and homeDiff.nodes.controlled then
+        local shared = share.nodes.shared
+        local home = homes[clientId]
+        local controlled = home and home.nodes and home.nodes.controlled or {}
+        local controlledDiff = homeDiff.nodes.controlled
+        local rootExact = homeDiff.__exact or homeDiff.nodes.__exact or controlledDiff.__exact
         if rootExact then
-            for nodeId in pairs(homes[clientId].controlled or {}) do
-                if not homeDiff.controlled[nodeId] then -- Client released control
+            for nodeId in pairs(controlled) do
+                if not controlledDiff[nodeId] then -- Client released control
                     locals.nodeManager:unlock(nodeId, clientId)
                 end
             end
         end
-        for nodeId, nodeDiff in pairs(homeDiff.controlled) do
+        for nodeId, nodeDiff in pairs(controlledDiff) do
             if nodeId ~= '__exact' then
                 if locals.nodeManager:lock(nodeId, clientId) then
                     if nodeDiff ~= lib.state.DIFF_NIL then -- Track and apply a controlled change
                         locals.nodeManager:trackDiff(nodeId, nodeDiff, rootExact)
                         if rootExact then
-                            share.nodes[nodeId] = nodeDiff
+                            shared[nodeId] = nodeDiff
                         else
-                            share.nodes[nodeId] = table_utils.applyDiff(share.nodes[nodeId], nodeDiff)
+                            shared[nodeId] = table_utils.applyDiff(shared[nodeId], nodeDiff)
                         end
-                    else -- Client released control
+                    else -- Client released control of this node
                         locals.nodeManager:unlock(nodeId, clientId)
                     end
                 end

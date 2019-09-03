@@ -23,8 +23,9 @@ print('DIFF_NIL: ' .. lib.state.DIFF_NIL)
 function table_utils.applyDiff(t, diff)
     if diff == nil then return t end
     if diff.__exact then
-        diff.__exact = nil
-        return diff
+        local clone = table_utils.clone(diff)
+        clone.__exact = nil
+        return clone
     end
     t = (type(t) == 'table' or type(t) == 'userdata') and t or {}
     for k, v in pairs(diff) do

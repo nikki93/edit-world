@@ -19,17 +19,17 @@ local NodeManagerMetatable = {
 function node_manager.new(opts)
     local self = setmetatable({}, NodeManagerMetatable)
 
+    self.shared = assert(opts.shared)
+    self.locks = assert(opts.locks)
+
     if opts.isServer then
         self.isServer = true
         self.isClient = false
 
-        self.shared = assert(opts.shared)
-        self.locks = assert(opts.locks)
     else
         self.isServer = false
         self.isClient = true
 
-        self.shared = assert(opts.shared)
         self.controlled = assert(opts.controlled)
     end
 
@@ -108,7 +108,7 @@ end
 
 function NodeManager:processDeletions()
     for id, deletion in pairs(self.deletions) do
-        local node = self:getNodeById(id)
+        local node = self:getById(id)
         if node then
             if deletion == DELETION_WAIT then
                 node.deletion = DELETION_DELETE
@@ -123,7 +123,7 @@ function NodeManager:processDeletions()
 end
 
 
-function NodeManager:getNodeById(id)
+function NodeManager:getById(id)
     if self.isServer then
         return self.shared[id]
     else
@@ -192,7 +192,7 @@ end
 
 
 function NodeManager:trackDiff(id, diff, rootExact)
-    local node = self:getNodeById(id)
+    local node = self:getById(id)
     if node then -- Update existing node
         local oldParentId = node.parentId
         local newParentId
@@ -273,6 +273,7 @@ end
 
 
 function NodeManager:lock(id, clientId)
+    assert(self.isServer, 'only servers can `:lock`')
     local lock = self.locks[id]
     if lock == nil then -- Not locked, acquire
         self.locks[id] = clientId
@@ -282,6 +283,7 @@ function NodeManager:lock(id, clientId)
 end
 
 function NodeManager:unlock(id, clientId)
+    assert(self.isServer, 'only servers can `:unlock`')
     if self.locks[id] == clientId then
         self.locks[id] = nil
     end
