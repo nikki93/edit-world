@@ -175,7 +175,7 @@ local function newNode()
 
     -- Create
     local newId = uuid()
-    local newNode = NODE_COMMON_DEFAULTS
+    local newNode = cloneValue(NODE_COMMON_DEFAULTS)
     newNode.id = newId
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     newNode[newNode.type] = NODE_TYPE_DEFAULTS[newNode.type]
@@ -214,10 +214,6 @@ local function cloneSelectedNodes()
         newNode.id = newId
         newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
         newNode.x, newNode.y = newNode.x + G, newNode.y + G
-        if newNode.type == 'group' then -- Shallow clone only for now
-            newNode.group.childrenIds = {}
-            newNode.group.tagIndices = {}
-        end
         if newNode.parentId then
             updateIndices(nil, newNode.parentId, newNode)
         end

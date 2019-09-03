@@ -75,8 +75,6 @@ end
 --- RECEIVE
 
 function server.receive(clientId, msg, ...)
-    local player = share.players[clientId]
-
     if msg == 'setSetting' then
         local name, value = ...
         share.settings[name] = value
