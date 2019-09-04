@@ -9,7 +9,7 @@ node_base.DEFAULTS = {
     x = 0,
     y = 0,
     rotation = 0,
-    depth = 0,
+    depth = 100,
     width = 4,
     height = 4,
 }

@@ -124,10 +124,30 @@ end
 
 
 function NodeManager:getById(id)
+    if id == nil then
+        return nil
+    end
     if self.isServer then
         return self.shared[id]
     else
         return self.controlled[id] or self.shared[id]
+    end
+end
+
+function NodeManager:forEach(func)
+    if self.isServer then
+        for id, node in pairs(self.shared) do
+            func(id, node)
+        end
+    else
+        for id, node in pairs(self.shared) do
+            if not self.controlled[id] then
+                func(id, node)
+            end
+        end
+        for id, node in pairs(self.controlled) do
+            func(id, node)
+        end
     end
 end
 
