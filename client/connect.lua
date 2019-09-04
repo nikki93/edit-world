@@ -22,4 +22,8 @@ function client.connect()
     })
 
     -- TODO(nikki): Handle `castle.post.getInitialPost()` being non-`nil`
+
+    network.async(function()
+        locals.loaded = true
+    end)
 end

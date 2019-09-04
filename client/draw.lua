@@ -23,6 +23,11 @@ function client.draw()
         return
     end
 
+    if not locals.loaded then
+        love.graphics.print('loading...', 20, 20)
+        return
+    end
+
     -- Background
     drawBackground()
 
