@@ -22,7 +22,6 @@ function player.init(p)
 end
 
 function player.draw(p)
-    local photoUrl = p.me and p.me.photoUrl
     node_types.image.draw(p.node, love.math.newTransform():translate(p.x, p.y))
 end
 

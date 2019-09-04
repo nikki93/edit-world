@@ -51,4 +51,8 @@ function client.draw()
             player.draw(p)
         end
     end)
+
+    -- FPS
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
 end
