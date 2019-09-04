@@ -4,7 +4,7 @@ local client = require 'client.init'
 local camera = {}
 
 
-local GUTTER = 5
+local GUTTER = 4
 
 
 local x, y = 0, 0
@@ -32,7 +32,7 @@ function camera.update(dt)
     -- Follow player
     local player = home.player
     if player then
-        local gutter = GUTTER * width / love.graphics.getWidth()
+        local gutter = GUTTER * width / 25
         if player.x - 0.5 < x - 0.5 * width + gutter then
             x = player.x - 0.5 + 0.5 * width - gutter
         end

@@ -27,7 +27,7 @@ function mode_common.drawForEachNode(nodeIds, func)
     end)
 end
 
-local function drawSelections()
+function mode_common.drawSelections()
     love.graphics.setColor(0, 1, 0)
     mode_common.drawForEachNode(selections.primary, function(id, node)
         mode_common.drawBoundingBox(node)
@@ -45,7 +45,7 @@ local function drawSelections()
 end
 
 function mode_common.drawWorldSpace()
-    drawSelections()
+    mode_common.drawSelections()
 end
 
 
