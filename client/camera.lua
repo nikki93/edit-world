@@ -25,17 +25,17 @@ function camera.update(dt)
     local player = home.player
     if player then
         local gutter = GUTTER * width / love.graphics.getWidth()
-        if home.x - 0.5 < x - 0.5 * width + gutter then
-            x = home.x - 0.5 + 0.5 * width - gutter
+        if player.x - 0.5 < x - 0.5 * width + gutter then
+            x = player.x - 0.5 + 0.5 * width - gutter
         end
-        if home.x + 0.5 > x + 0.5 * width - gutter then
-            x = home.x + 0.5 - 0.5 * width + gutter
+        if player.x + 0.5 > x + 0.5 * width - gutter then
+            x = player.x + 0.5 - 0.5 * width + gutter
         end
-        if home.y - 0.5 < y - 0.5 * height + gutter then
-            y = home.y - 0.5 + 0.5 * height - gutter
+        if player.y - 0.5 < y - 0.5 * height + gutter then
+            y = player.y - 0.5 + 0.5 * height - gutter
         end
-        if home.y + 0.5 > y + 0.5 * height - gutter then
-            y = home.y + 0.5 - 0.5 * height + gutter
+        if player.y + 0.5 > y + 0.5 * height - gutter then
+            y = player.y + 0.5 - 0.5 * height + gutter
         end
     end
 end

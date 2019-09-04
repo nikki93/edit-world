@@ -22,7 +22,7 @@ function player.draw(p)
         image = {
             url = photoUrl,
         },
-    }, love.graphics.newTransform():translate(p.x, p.y))
+    }, love.math.newTransform():translate(p.x, p.y))
 end
 
 function player.update(p, dt)
