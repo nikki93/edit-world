@@ -18,11 +18,11 @@ local function drawBackground()
 end
 
 function client.draw()
+    -- Connecting / loading?
     if not client.connected then
         love.graphics.print('connecting...', 20, 20)
         return
     end
-
     if not locals.loaded then
         love.graphics.print('loading...', 20, 20)
         return
