@@ -23,6 +23,11 @@ function client.connect()
 
     -- TODO(nikki): Handle `castle.post.getInitialPost()` being non-`nil`
 
+    if locals.deferredShareDiff then -- If `client.changing` gets a diff before `client.connect` it defers it for later
+        client.changing(locals.deferredShareDiff)
+        locals.deferredShareDiff = nil
+    end
+
     network.async(function()
         locals.loaded = true
     end)
