@@ -130,6 +130,12 @@ function NodeManager:control(id)
     self.controlled[id] = self.shared[id]
 end
 
+function NodeManager:uncontrol(id)
+    assert(self.isClient, "only clients can call `:uncontrol`")
+    assert(self:canLock(id, self.clientId), "can't acquire lock")
+    self.controlled[id] = nil
+end
+
 function NodeManager:hasControl(id)
     assert(self.isClient, "only clients can call `:hasControl`")
     return self.controlled[id] ~= nil

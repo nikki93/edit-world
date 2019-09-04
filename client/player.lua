@@ -22,7 +22,9 @@ function player.init(p)
 end
 
 function player.draw(p)
-    node_types.image.draw(p.node, love.math.newTransform():translate(p.x, p.y))
+    if p.node then
+        node_types.image.draw(p.node, love.math.newTransform():translate(p.x, p.y))
+    end
 end
 
 function player.update(p, dt)

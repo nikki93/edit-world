@@ -35,6 +35,9 @@ function selections.attemptPrimarySelect(id, conflictingSelectIfFail)
 end
 
 function selections.deselectAll()
+    for id in pairs(selections.primary) do
+        locals.nodeManager:uncontrol(id)
+    end
     selections.primary = {}
     selections.secondary = {}
     selections.conflicting = {}
