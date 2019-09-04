@@ -19,7 +19,7 @@ function camera.getTransform()
     return transform
 end
 
-function camera.getBaseLineWidth()
+function camera.getPixelLineWidth()
     return width / love.graphics.getWidth()
 end
 

@@ -14,7 +14,7 @@ end
 
 function mode_common.drawForEachNode(nodeIds, func)
     graphics_utils.safePushPop('all', function()
-        love.graphics.setLineWidth(1.5 * camera.getBaseLineWidth())
+        love.graphics.setLineWidth(1.5 * camera.getPixelLineWidth())
         for id in pairs(nodeIds) do
             local node = locals.nodeManager:getById(id)
             if node then
