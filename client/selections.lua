@@ -9,11 +9,22 @@ selections.secondary = {}
 selections.conflicting = {}
 
 
-function selections.primarySelect(id)
-    if not locals.nodeManager:hasControl(id) then
-        locals.nodeManager:control(id)
+function selections.isSelected(id, selectionType, ...)
+    if selectionType == nil then
+        return false
     end
-    selections.primary[id] = true
+    return selections[selectionType][id] or selections.isSelected(id, ...)
+end
+
+function selections.attemptPrimarySelect(id, conflictingSelectIfFail)
+    if locals.nodeManager:canLock(id) then
+        if not locals.nodeManager:hasControl(id) then
+            locals.nodeManager:control(id)
+        end
+        selections.primary[id] = true
+    elseif conflictingSelectIfFail ~= false then
+        selections.conflicting[id] = true
+    end
 end
 
 function selections.deselectAll()

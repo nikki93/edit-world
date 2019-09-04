@@ -4,6 +4,7 @@ local selections = require 'client.selections'
 local player = require 'client.player'
 local camera = require 'client.camera'
 local locals = require 'client.locals'
+local mode = require 'client.mode'
 
 
 local share = client.share
@@ -27,4 +28,6 @@ function client.update(dt)
     end
 
     camera.update(dt)
+
+    mode.update(dt)
 end

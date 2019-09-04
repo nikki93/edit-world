@@ -323,6 +323,7 @@ function NodeManager:unlock(id, clientId)
 end
 
 function NodeManager:canLock(id, clientId)
+    clientId = clientId or self.clientId
     return not self.locks[id] or self.locks[id] == clientId
 end
 

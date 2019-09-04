@@ -9,15 +9,14 @@ local GUTTER = 5
 
 local x, y = 0, 0
 local width, height = 25, 14.0625
+local transform = love.math.newTransform()
 
 
 local home = client.home
 
 
-function camera.applyTransform()
-    local windowW, windowH = love.graphics.getDimensions()
-    love.graphics.scale(windowW / width)
-    love.graphics.translate(-x + 0.5 * width, -y + 0.5 * height)
+function camera.getTransform()
+    return transform
 end
 
 function camera.getBaseLineWidth()
@@ -47,6 +46,11 @@ function camera.update(dt)
             y = player.y + 0.5 - 0.5 * height + gutter
         end
     end
+
+    -- Update the transform
+    transform:reset()
+    transform:scale(windowW / width)
+    transform:translate(-x + 0.5 * width, -y + 0.5 * height)
 end
 
 

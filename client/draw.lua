@@ -4,8 +4,8 @@ local camera = require 'client.camera'
 local locals = require 'client.locals'
 local space = require 'client.space'
 local node_types = require 'common.node_types'
-local gizmos = require 'client.gizmos'
 local player = require 'client.player'
+local mode = require 'client.mode'
 
 
 local share = client.share
@@ -33,7 +33,7 @@ function client.draw()
 
     -- Camera transform
     graphics_utils.safePushPop('all', function()
-        camera.applyTransform()
+        love.graphics.applyTransform(camera.getTransform())
 
         -- Nodes
         local order = {}
@@ -45,8 +45,8 @@ function client.draw()
             node_types[node.type].draw(node, space.getWorldSpace(node).transform)
         end
 
-        -- Gizmos
-        gizmos.draw()
+        -- Mode (world-space)
+        mode.drawWorldSpace()
 
         -- Players
         for clientId, p in pairs(share.players) do
@@ -56,6 +56,9 @@ function client.draw()
             player.draw(p)
         end
     end)
+
+    -- Mode (screen-space)
+    mode.drawScreenSpace()
 
     -- FPS
     love.graphics.setColor(0, 0, 0)
