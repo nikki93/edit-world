@@ -11,6 +11,13 @@ modes.grab = require 'client.mode_grab'
 modes.rotate = require 'client.mode_rotate'
 modes.resize = require 'client.mode_resize'
 
+local order = {
+    'none',
+    'grab',
+    'rotate',
+    'resize',
+}
+
 
 local currentMode = 'none'
 
@@ -33,6 +40,10 @@ function mode.setMode(newMode)
     fireEvent('enter')
 end
 
+function mode.getMode()
+    return currentMode
+end
+
 
 function mode.update(dt)
     fireEvent('update', dt)
@@ -49,6 +60,12 @@ end
 
 
 function mode.keypressed(key, scancode, isRepeat)
+    local number = tonumber(key)
+    if number ~= nil and 1 <= number and number <= #order then
+        mode.setMode(order[number])
+        return
+    end
+
     fireEvent('keypressed', key, scancode, isRepeat)
 end
 

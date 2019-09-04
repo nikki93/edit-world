@@ -60,7 +60,8 @@ function client.draw()
     -- Mode (screen-space)
     mode.drawScreenSpace()
 
-    -- FPS
+    -- HUD
     love.graphics.setColor(0, 0, 0)
     love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
+    love.graphics.print('\nmode: ' .. mode.getMode(), 20, 20)
 end
