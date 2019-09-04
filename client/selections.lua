@@ -9,6 +9,13 @@ selections.secondary = {}
 selections.conflicting = {}
 
 
+function selections.isAnySelected(selectionType, ...)
+    if selectionType == nil then
+        return false
+    end
+    return next(selections[selectionType]) ~= nil or selections.isAnySelected(...)
+end
+
 function selections.isSelected(id, selectionType, ...)
     if selectionType == nil then
         return false

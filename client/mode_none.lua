@@ -8,7 +8,20 @@ local camera = require 'client.camera'
 local mode_none = {}
 
 
-local function clickSelect(screenMouseX, screenMouseY)
+function mode_none.newNode()
+    selections.deselectAll()
+    local newNode = locals.nodeManager:new({ isControlled = true })
+    selections.attemptPrimarySelect(newNode.id)
+end
+
+function mode_none.deleteNodes()
+end
+
+function mode_none.cloneNodes()
+end
+
+
+function mode_none.clickSelect(screenMouseX, screenMouseY)
     local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
 
     -- Collect hits
@@ -41,7 +54,7 @@ end
 
 function mode_none.mousepressed(x, y, button)
     if button == 1 then
-        clickSelect(x, y)
+        mode_none.clickSelect(x, y)
     end
 end
 
