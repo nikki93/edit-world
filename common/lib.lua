@@ -8,5 +8,7 @@ lib.state = require 'https://raw.githubusercontent.com/castle-games/share.lua/62
 lib.uuid = require 'https://raw.githubusercontent.com/Tieske/uuid/75f84281f4c45838f59fc2c6f893fa20e32389b6/src/uuid.lua'
 lib.uuid.seed()
 
+lib.sfxr = require 'https://raw.githubusercontent.com/nucular/sfxrlua/27511554ab63b834a8d8b34437c4ba5f0f589fdf/sfxr.lua'
+
 
 return lib

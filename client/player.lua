@@ -10,19 +10,20 @@ local WALK_SPEED = 6
 
 function player.init(p)
     p = table_utils.clone(p)
+
     p.me = castle.user.getMe()
+
+    p.node = node_types.base.DEFAULTS
+    p.node.image = node_types.image.DEFAULTS
+    p.node.width, p.node.height = 1, 1
+    p.node.image.url = p.me.photoUrl
+
     return p
 end
 
 function player.draw(p)
     local photoUrl = p.me and p.me.photoUrl
-    node_types['image'].draw({
-        width = 1,
-        height = 1,
-        image = {
-            url = photoUrl,
-        },
-    }, love.math.newTransform():translate(p.x, p.y))
+    node_types.image.draw(p.node, love.math.newTransform():translate(p.x, p.y))
 end
 
 function player.update(p, dt)
