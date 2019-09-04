@@ -1,12 +1,10 @@
 local client = require 'client.init'
-
-
-local share = client.share
+local locals = require 'client.locals'
+local lib = require 'common.lib'
 
 
 function client.changing(shareDiff)
     if shareDiff.nodes and shareDiff.nodes.shared then
-        local shared = share.nodes.shared
         local sharedDiff = shareDiff.nodes.shared
         local rootExact = shareDiff.__exact or shareDiff.nodes.__exact or sharedDiff.__exact
         for nodeId, nodeDiff in pairs(sharedDiff) do

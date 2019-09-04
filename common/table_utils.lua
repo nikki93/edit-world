@@ -19,7 +19,6 @@ function table_utils.clone(t)
     end
 end
 
-print('DIFF_NIL: ' .. lib.state.DIFF_NIL)
 function table_utils.applyDiff(t, diff)
     if diff == nil then return t end
     if diff.__exact then

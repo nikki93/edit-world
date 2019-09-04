@@ -5,9 +5,11 @@ local locals = require 'client.locals'
 local space = require 'client.space'
 local node_types = require 'common.node_types'
 local gizmos = require 'client.gizmos'
+local player = require 'client.player'
 
 
 local share = client.share
+local home = client.home
 
 
 local function drawBackground()
@@ -30,7 +32,7 @@ function client.draw()
 
         -- Nodes
         local order = {}
-        locals.nodeMgr:forEach(function(id, node)
+        locals.nodeManager:forEach(function(id, node)
             table.insert(order, node)
         end)
         table.sort(order, space.compareDepth)
@@ -40,5 +42,13 @@ function client.draw()
 
         -- Gizmos
         gizmos.draw()
+
+        -- Players
+        for clientId, p in pairs(share.players) do
+            if client.id == clientId and home.player then
+                p = home.player
+            end
+            player.draw(p)
+        end
     end)
 end
