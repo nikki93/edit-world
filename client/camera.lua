@@ -4,11 +4,15 @@ local client = require 'client.init'
 local camera = {}
 
 
+local DEFAULT_WIDTH = 25
+local ZOOM_BASE = 2
+local MIN_ZOOM_EXPONENT, MAX_ZOOM_EXPONENT = -1, 3
 local GUTTER = 4
 
 
 local x, y = 0, 0
-local width, height = 25, 14.0625
+local zoomExponent = 0
+local width, height = DEFAULT_WIDTH, DEFAULT_WIDTH * love.graphics.getHeight() / love.graphics.getWidth()
 local transform = love.math.newTransform()
 
 
@@ -21,6 +25,24 @@ end
 
 function camera.getPixelLineWidth()
     return width / love.graphics.getWidth()
+end
+
+
+local function zoomBy(by)
+    zoomExponent = math.min(math.max(MIN_ZOOM_EXPONENT, zoomExponent + by), MAX_ZOOM_EXPONENT)
+    width = DEFAULT_WIDTH * math.pow(ZOOM_BASE, zoomExponent)
+end
+
+function camera.zoomIn()
+    zoomBy(-1)
+end
+
+function camera.zoomOut()
+    zoomBy(1)
+end
+
+function camera.getZoomFactor()
+    return width / DEFAULT_WIDTH
 end
 
 

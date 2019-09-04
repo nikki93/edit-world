@@ -64,4 +64,11 @@ function client.draw()
     love.graphics.setColor(0, 0, 0)
     love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
     love.graphics.print('\nmode: ' .. mode.getMode(), 20, 20)
+    local zoomFactor = camera.getZoomFactor()
+    if zoomFactor < 1 then
+        love.graphics.print('\n\nzoom in: ' .. (1 / zoomFactor) .. 'x', 20, 20)
+    end
+    if zoomFactor > 1 then
+        love.graphics.print('\n\nzoom out: ' .. zoomFactor .. 'x', 20, 20)
+    end
 end
