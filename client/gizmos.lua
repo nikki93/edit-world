@@ -2,6 +2,7 @@ local selections = require 'client.selections'
 local locals = require 'client.locals'
 local graphics_utils = require 'client.graphics_utils'
 local space = require 'client.space'
+local camera = require 'client.camera'
 
 
 local gizmos = {}
@@ -9,6 +10,7 @@ local gizmos = {}
 
 local function drawGizmosWithColor(nodeIds, r, g, b)
     graphics_utils.safePushPop('all', function()
+        love.graphics.setLineWidth(1.5 * camera.getBaseLineWidth())
         love.graphics.setColor(r, g, b)
         for id in pairs(nodeIds) do
             local node = locals.nodeManager:getById(id)

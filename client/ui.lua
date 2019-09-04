@@ -22,7 +22,8 @@ local function uiNodesTopBar()
     uiRow('top-bar', function()
         if ui.button('new') then
             selections.deselectAll()
-            locals.nodeManager:new({ isControlled = true })
+            local newNode = locals.nodeManager:new({ isControlled = true })
+            selections.primarySelect(newNode.id)
         end
     end, function()
         if next(selections.primary) and ui.button('delete', { kind = 'danger' }) then

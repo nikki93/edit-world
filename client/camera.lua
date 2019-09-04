@@ -16,12 +16,21 @@ local home = client.home
 
 function camera.applyTransform()
     local windowW, windowH = love.graphics.getDimensions()
-    love.graphics.scale(windowW / width, windowH / height)
+    love.graphics.scale(windowW / width)
     love.graphics.translate(-x + 0.5 * width, -y + 0.5 * height)
+end
+
+function camera.getBaseLineWidth()
+    return width / love.graphics.getWidth()
 end
 
 
 function camera.update(dt)
+    -- Respect window aspect ratio
+    local windowW, windowH = love.graphics.getDimensions()
+    height = width * windowH / windowW
+
+    -- Follow player
     local player = home.player
     if player then
         local gutter = GUTTER * width / love.graphics.getWidth()
