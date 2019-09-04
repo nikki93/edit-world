@@ -2,7 +2,7 @@ local node_image = {}
 
 
 node_image.DEFAULTS = {
-    url = 'https://github.com/nikki93/edit-world/raw/66e4850578fd46cbb9f3c1db30611981f26906e5/checkerboard.png',
+    url = '',
     color = { r = 1, g = 1, b = 1, a = 1 },
     smoothScaling = true,
     crop = false,

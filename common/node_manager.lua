@@ -31,6 +31,7 @@ function node_manager.new(opts)
         self.isClient = true
 
         self.controlled = assert(opts.controlled)
+        self.clientId = assert(opts.clientId)
     end
 
     self.proxies = {}                   -- `node.id` -> `node_types[node.type]` instance with `.node` == `node`
@@ -48,7 +49,7 @@ function NodeManager:new(opts)
     local newNode = table_utils.clone(node_types.base.DEFAULTS)
     newNode.id = id
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
-    newNode[newNode.type] = node_types[newNode.type].DEFAULTS
+    newNode[newNode.type] = table_utils.clone(node_types[newNode.type].DEFAULTS)
 
     if self.isServer then
         self.shared[id] = newNode
@@ -120,6 +121,18 @@ function NodeManager:processDeletions()
             self.deletions[id] = nil
         end
     end
+end
+
+
+function NodeManager:control(id)
+    assert(self.isClient, "only clients can call `:control`")
+    assert(self:canLock(id, self.clientId), "can't acquire lock")
+    self.controlled[id] = self.shared[id]
+end
+
+function NodeManager:hasControl(id)
+    assert(self.isClient, "only clients can call `:hasControl`")
+    return self.controlled[id] ~= nil
 end
 
 
@@ -307,6 +320,10 @@ function NodeManager:unlock(id, clientId)
     if self.locks[id] == clientId then
         self.locks[id] = nil
     end
+end
+
+function NodeManager:canLock(id, clientId)
+    return not self.locks[id] or self.locks[id] == clientId
 end
 
 

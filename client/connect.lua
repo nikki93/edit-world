@@ -18,6 +18,7 @@ function client.connect()
         shared = share.nodes.shared,
         locks = share.nodes.locks,
         controlled = home.nodes.controlled,
+        clientId = client.id,
     })
 
     -- TODO(nikki): Handle `castle.post.getInitialPost()` being non-`nil`

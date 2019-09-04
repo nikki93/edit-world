@@ -13,8 +13,8 @@ function player.init(p)
 
     p.me = castle.user.getMe()
 
-    p.node = node_types.base.DEFAULTS
-    p.node.image = node_types.image.DEFAULTS
+    p.node = table_utils.clone(node_types.base.DEFAULTS)
+    p.node.image = table_utils.clone(node_types.image.DEFAULTS)
     p.node.width, p.node.height = 1, 1
     p.node.image.url = p.me.photoUrl
 
