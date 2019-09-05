@@ -8,7 +8,7 @@ local mode_move = {}
 
 function mode_move.move(prevWorldMouseX, prevWorldMouseY, worldMouseX, worldMouseY)
     selections.forEach('primary', function(id, node)
-        local transform = space.getWorldSpace(node).transform
+        local transform = space.getParentWorldSpace(node).transform
         local localPrevMouseX, localPrevMouseY = transform:inverseTransformPoint(prevWorldMouseX, prevWorldMouseY)
         local localMouseX, localMouseY = transform:inverseTransformPoint(worldMouseX, worldMouseY)
         local localMouseDX, localMouseDY = localMouseX - localPrevMouseX, localMouseY - localPrevMouseY
