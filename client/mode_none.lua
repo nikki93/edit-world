@@ -23,6 +23,7 @@ end
 function mode_none.cloneNodes()
     selections.forEach('primary', function(id)
         local newNode = locals.nodeManager:clone(id, { isControlled = true })
+        newNode.x, newNode.y = newNode.x + 1, newNode.y + 1
         selections.deselect(id, 'primary')
         selections.attemptPrimarySelect(newNode.id)
     end)
@@ -30,10 +31,14 @@ end
 
 
 function mode_none.clickSelect(screenMouseX, screenMouseY)
-    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
+    -- Deselect everything first, unless multi-selecting
+    if not (love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl')) then
+        selections.deselectAll()
+    end
 
     -- Collect hits
     local hits = {}
+    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
     locals.nodeManager:forEach(function(id, node)
         local localMouseX, localMouseY = space.getWorldSpace(node).transform:inverseTransformPoint(worldMouseX, worldMouseY)
         if math.abs(localMouseX) <= 0.5 * node.width and math.abs(localMouseY) <= 0.5 * node.height then
@@ -51,12 +56,8 @@ function mode_none.clickSelect(screenMouseX, screenMouseY)
         end
     end
     pick = pick or hits[#hits]
-
-    -- Select it, or if nothing, deselect all
     if pick then
         selections.attemptPrimarySelect(pick.id)
-    else
-        selections.deselectAll()
     end
 end
 

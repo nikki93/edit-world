@@ -16,8 +16,6 @@ function client.update(dt)
         return
     end
 
-    selections.clearDeletedSelections()
-
     locals.nodeManager:processDeletions()
     locals.nodeManager:runThinkRules(dt)
 
@@ -26,6 +24,8 @@ function client.update(dt)
     end
 
     camera.update(dt)
+
+    selections.clearDeletedSelections()
 
     mode.update(dt)
 
