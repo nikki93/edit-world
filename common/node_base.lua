@@ -15,4 +15,20 @@ node_base.DEFAULTS = {
 }
 
 
+node_base.proxyMethods = setmetatable({}, {
+    __index = function(self, k)
+        return function()
+            error("nodes of type '" .. self.__node.type .. "' do not have a `:" .. k .. "` method")
+        end
+    end,
+})
+node_base.proxyMetatable = {
+    __index = proxyMethods,
+}
+
+function node_base.proxyMethods:getId()
+    return self.__node.id
+end
+
+
 return node_base

@@ -11,8 +11,4 @@ node_sound.DEFAULTS = {
 }
 
 
-function node_sound.draw(node, transform)
-end
-
-
 return node_sound

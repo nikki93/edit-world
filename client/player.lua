@@ -1,5 +1,5 @@
 local table_utils = require 'common.table_utils'
-local node_types = require 'common.node_types'
+local node_image = require 'common.node_image'
 
 
 local player = {}
@@ -13,18 +13,13 @@ function player.init(p)
 
     p.me = castle.user.getMe()
 
-    p.node = table_utils.clone(node_types.base.DEFAULTS)
-    p.node.image = table_utils.clone(node_types.image.DEFAULTS)
-    p.node.width, p.node.height = 1, 1
-    p.node.image.url = p.me.photoUrl
-
     return p
 end
 
 function player.draw(p)
-    if p.node then
-        node_types.image.draw(p.node, love.math.newTransform():translate(p.x, p.y))
-    end
+    local image = node_image.imageFromUrl((p.me and p.me.photoUrl) or '')
+    local scaleX, scaleY = 1 / image:getWidth(), 1 / image:getHeight()
+    love.graphics.draw(image, p.x - 0.5, p.y - 0.5, 0, scaleX, scaleY)
 end
 
 function player.update(p, dt)

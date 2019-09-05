@@ -339,10 +339,23 @@ end
 
 
 --
--- Rules
+-- Rules / proxies
 --
 
 function NodeManager:runThinkRules(dt)
+end
+
+function NodeManager:getProxy(idOrNode)
+    local node = self:resolveIdOrNode(idOrNode)
+    local proxy = self.proxies[node.id]
+    if not proxy then
+        proxy = setmetatable({
+            __node = node,
+            __nodeManager = self,
+        }, node_types[node.type].proxyMetatable)
+        self.proxies[node.id] = proxy
+    end
+    return proxy
 end
 
 

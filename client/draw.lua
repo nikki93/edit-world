@@ -36,39 +36,49 @@ function client.draw()
         love.graphics.applyTransform(camera.getTransform())
 
         -- Nodes
-        local order = {}
-        locals.nodeManager:forEach(function(id, node)
-            table.insert(order, node)
+        graphics_utils.safePushPop('all', function()
+            local order = {}
+            locals.nodeManager:forEach(function(id, node)
+                table.insert(order, node)
+            end)
+            table.sort(order, space.compareDepth)
+            for _, node in ipairs(order) do
+                locals.nodeManager:getProxy(node):draw(transform)
+            end
         end)
-        table.sort(order, space.compareDepth)
-        for _, node in ipairs(order) do
-            node_types[node.type].draw(node, space.getWorldSpace(node).transform)
-        end
 
         -- Mode (world-space)
-        mode.drawWorldSpace()
+        graphics_utils.safePushPop('all', function()
+            mode.drawWorldSpace()
+        end)
 
         -- Players
-        for clientId, p in pairs(share.players) do
-            if client.id == clientId and home.player then
-                p = home.player
+        graphics_utils.safePushPop('all', function()
+            for clientId, p in pairs(share.players) do
+                if client.id == clientId and home.player then
+                    p = home.player
+                end
+                player.draw(p)
             end
-            player.draw(p)
-        end
+        end)
     end)
 
     -- Mode (screen-space)
-    mode.drawScreenSpace()
+    graphics_utils.safePushPop('all', function()
+        mode.drawScreenSpace()
+    end)
 
     -- HUD
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
-    love.graphics.print('\nmode: ' .. mode.getMode(), 20, 20)
-    local zoomFactor = camera.getZoomFactor()
-    if zoomFactor < 1 then
-        love.graphics.print('\n\nzoom in: ' .. (1 / zoomFactor) .. 'x', 20, 20)
-    end
-    if zoomFactor > 1 then
-        love.graphics.print('\n\nzoom out: ' .. zoomFactor .. 'x', 20, 20)
-    end
+    graphics_utils.safePushPop('all', function()
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
+        love.graphics.print('\nmode: ' .. mode.getMode(), 20, 20)
+        local zoomFactor = camera.getZoomFactor()
+        if zoomFactor < 1 then
+            love.graphics.print('\n\nzoom in: ' .. (1 / zoomFactor) .. 'x', 20, 20)
+        end
+        if zoomFactor > 1 then
+            love.graphics.print('\n\nzoom out: ' .. zoomFactor .. 'x', 20, 20)
+        end
+    end)
 end

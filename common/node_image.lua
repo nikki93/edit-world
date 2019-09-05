@@ -1,3 +1,6 @@
+local node_base = require 'common.node_base'
+
+
 local node_image = {}
 
 
@@ -13,70 +16,74 @@ node_image.DEFAULTS = {
 }
 
 
-local defaultImage
-if love.graphics then
-    defaultImage = love.graphics.newImage('checkerboard.png')
-end
+node_image.proxyMethods = setmetatable({}, { __index = node_base.proxyMethods })
+node_image.proxyMetatable = { __index = proxyMethods }
 
-local imageCache = {}
 
-local function imageFromUrl(url)
-    local cached = imageCache[url]
-    if not cached then
-        cached = {}
-        imageCache[url] = cached
-        if url == '' then
-            cached.image = defaultImage
-        else
-            network.async(function()
-                cached.image = love.graphics.newImage(url)
-            end)
+if not castle.system.isRemoteServer() then
+    local defaultImage = love.graphics.newImage('checkerboard.png')
+
+    local imageCache = {}
+
+    function node_image.imageFromUrl(url)
+        local cached = imageCache[url]
+        if not cached then
+            cached = {}
+            imageCache[url] = cached
+            if url == '' then
+                cached.image = defaultImage
+            else
+                network.async(function()
+                    cached.image = love.graphics.newImage(url)
+                end)
+            end
         end
-    end
-    return cached.image or defaultImage
-end
-
-
-local theTransform = love.math.newTransform()
-
-local theQuad
-if love.graphics then
-    theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
-end
-
-function node_image.draw(node, transform)
-    local image = imageFromUrl(node.image.url)
-
-    -- Filter
-    local filter = image:getFilter()
-    if node.image.smoothScaling and filter == 'nearest' then
-        image:setFilter('linear')
-    end
-    if not node.image.smoothScaling and filter == 'linear' then
-        image:setFilter('nearest')
+        return cached.image or defaultImage
     end
 
-    -- Crop
-    local iw, ih = image:getWidth(), image:getHeight()
-    if node.image.crop then
-        theQuad:setViewport(node.image.cropX, node.image.cropY, node.image.cropWidth, node.image.cropHeight, iw, ih)
-    else
-        theQuad:setViewport(0, 0, iw, ih, iw, ih)
+    local theTransform = love.math.newTransform()
+    local theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
+
+    function node_image.proxyMethods:draw(transform)
+        local node = self.__node
+
+        -- Image
+        local image = node_image.imageFromUrl(node.image.url)
+
+        -- Filter
+        local filter = image:getFilter()
+        if node.image.smoothScaling and filter == 'nearest' then
+            image:setFilter('linear')
+        end
+        if not node.image.smoothScaling and filter == 'linear' then
+            image:setFilter('nearest')
+        end
+
+        -- Crop
+        local imageWidth, imageHeight = image:getWidth(), image:getHeight()
+        if node.image.crop then
+            theQuad:setViewport(node.image.cropX, node.image.cropY, node.image.cropWidth, node.image.cropHeight, imageWidth, imageHeight)
+        else
+            theQuad:setViewport(0, 0, imageWidth, imageHeight, imageWidth, imageHeight)
+        end
+        local quadX, quadY, quadWidth, quadHeight = theQuad:getViewport()
+
+        -- Scale
+        local scale = math.min(node.width / quadWidth, node.height / quadHeight)
+
+        -- Color
+        local c = node.image.color
+        love.graphics.setColor(c.r, c.g, c.b, c.a)
+
+        -- Transform
+        theTransform:reset()
+        theTransform:apply(transform)
+        theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(scale)
+        love.graphics.draw(image, theQuad, theTransform)
     end
-    local qx, qy, qw, qh = theQuad:getViewport()
-
-    -- Scale
-    local scale = math.min(node.width / qw, node.height / qh)
-
-    -- Color
-    local c = node.image.color
-    love.graphics.setColor(c.r, c.g, c.b, c.a)
-
-    -- Transform
-    theTransform:reset()
-    theTransform:apply(transform)
-    theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(scale)
-    love.graphics.draw(image, theQuad, theTransform)
+else
+    function node_image.proxyMethods:draw(transform)
+    end
 end
 
 

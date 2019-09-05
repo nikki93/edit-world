@@ -10,5 +10,7 @@ lib.uuid.seed()
 
 lib.sfxr = require 'https://raw.githubusercontent.com/nucular/sfxrlua/27511554ab63b834a8d8b34437c4ba5f0f589fdf/sfxr.lua'
 
+lib.serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb21933f63eb23ece7d60ba2349a8d2848/src/serpent.lua'
+
 
 return lib

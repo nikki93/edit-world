@@ -9,8 +9,4 @@ node_text.DEFAULTS = {
 }
 
 
-function node_text.draw(node, transform)
-end
-
-
 return node_text
