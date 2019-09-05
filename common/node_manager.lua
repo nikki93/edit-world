@@ -37,7 +37,12 @@ function node_manager.new(opts)
 end
 
 
+--
+-- New / delete
+--
+
 function NodeManager:new(opts)
+    -- Initial data
     local newNodeData
     if opts.initialData then
         newNodeData = table_utils.clone(opts.initialData)
@@ -45,18 +50,30 @@ function NodeManager:new(opts)
         newNodeData = table_utils.clone(node_types.base.DEFAULTS)
         newNodeData[newNodeData.type] = table_utils.clone(node_types[newNodeData.type].DEFAULTS)
     end
-    newNodeData.id = lib.uuid()
+    local id = lib.uuid()
+    newNodeData.id = id
     newNodeData.rngState = love.math.newRandomGenerator(love.math.random()):getState()
 
-    -- TODO(nikki): Track if has `.parentId`
-
+    -- Insert in tables
+    local newNode
     if self.isClient and opts.isControlled then
-        self.controlled[newNodeData.id] = newNodeData
-        return self.controlled[newNodeData.id]
+        self.controlled[id] = newNodeData
+        newNode = self.controlled[id]
     else
-        self.shared[newNodeData.id] = newNodeData
-        return self.shared[newNodeData.id]
+        self.shared[id] = newNodeData
+        newNode = self.shared[id]
     end
+
+    -- Track parent
+    local parentId = newNode.parentId
+    if parentId then
+        self:trackParent(id, parentId)
+        for tag in pairs(newNode.tags) do
+            self:trackTag(id, parentId, tag)
+        end
+    end
+
+    return newNode
 end
 
 function NodeManager:clone(idOrNode, opts)
@@ -70,6 +87,7 @@ end
 function NodeManager:actuallyDelete(node)
     local id = node.id
 
+    -- Untrack parent
     local parentId = node.parentId
     if parentId then
         for tag in pairs(node.tags) do
@@ -78,9 +96,9 @@ function NodeManager:actuallyDelete(node)
         self:untrackParent(id, parentId)
     end
 
+    -- Remove from tables
     self.proxies[id] = nil
     self.locks[id] = nil
-
     if self.isClient then
         self.controlled[id] = nil
     end
@@ -97,31 +115,9 @@ function NodeManager:delete(idOrNode)
 end
 
 
-function NodeManager:control(id)
-    assert(self.isClient, "only clients can call `:control`")
-    assert(self:canLock(id, self.clientId), "can't acquire lock")
-    self.controlled[id] = self.shared[id]
-end
-
-function NodeManager:uncontrol(id)
-    assert(self.isClient, "only clients can call `:uncontrol`")
-    assert(self:canLock(id, self.clientId), "can't acquire lock")
-    self.controlled[id] = nil
-end
-
-function NodeManager:hasControl(id)
-    assert(self.isClient, "only clients can call `:hasControl`")
-    return self.controlled[id] ~= nil
-end
-
-
-function NodeManager:resolveIdOrNode(idOrNode)
-    if type(idOrNode) == 'string' then
-        return self:getById(idOrNode)
-    else
-        return idOrNode
-    end
-end
+--
+-- Lookup
+--
 
 function NodeManager:getById(id)
     if id == nil then
@@ -131,6 +127,14 @@ function NodeManager:getById(id)
         return self.shared[id]
     else
         return self.controlled[id] or self.shared[id]
+    end
+end
+
+function NodeManager:resolveIdOrNode(idOrNode)
+    if type(idOrNode) == 'string' then
+        return self:getById(idOrNode)
+    else
+        return idOrNode
     end
 end
 
@@ -151,6 +155,10 @@ function NodeManager:forEach(func)
     end
 end
 
+
+--
+-- Tracking
+--
 
 function NodeManager:trackParent(id, parentId)
     if parentId then
@@ -284,9 +292,9 @@ function NodeManager:trackDiff(id, diff, rootExact)
 end
 
 
-function NodeManager:runThinkRules(dt)
-end
-
+--
+-- Locking / controlling
+--
 
 function NodeManager:lock(id, clientId)
     assert(self.isServer, 'only servers can `:lock`')
@@ -309,6 +317,32 @@ function NodeManager:canLock(id, clientId)
     clientId = clientId or self.clientId
     local lock = self.locks[id]
     return not lock or lock == clientId
+end
+
+
+function NodeManager:control(id)
+    assert(self.isClient, "only clients can call `:control`")
+    assert(self:canLock(id, self.clientId), "can't acquire lock")
+    self.controlled[id] = self.shared[id]
+end
+
+function NodeManager:uncontrol(id)
+    assert(self.isClient, "only clients can call `:uncontrol`")
+    assert(self:canLock(id, self.clientId), "can't acquire lock")
+    self.controlled[id] = nil
+end
+
+function NodeManager:hasControl(id)
+    assert(self.isClient, "only clients can call `:hasControl`")
+    return self.controlled[id] ~= nil
+end
+
+
+--
+-- Rules
+--
+
+function NodeManager:runThinkRules(dt)
 end
 
 
