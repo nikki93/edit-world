@@ -19,6 +19,8 @@ end
 
 -- We use `.update` instead of `.mousemoved` to take into account camera motion while the mouse is still
 
+local mouseDown = false
+
 local prevWorldMouseX, prevWorldMouseY
 
 function mode_move.update(dt)
@@ -26,10 +28,22 @@ function mode_move.update(dt)
     if not (prevWorldMouseX and prevWorldMouseY) then
         prevWorldMouseX, prevWorldMouseY = worldMouseX, worldMouseY
     end
-    if love.mouse.isDown(1) then
+    if mouseDown then
         mode_move.move(prevWorldMouseX, prevWorldMouseY, worldMouseX, worldMouseY)
     end
     prevWorldMouseX, prevWorldMouseY = worldMouseX, worldMouseY
+end
+
+function mode_move.mousepressed(x, y, button, isTouch, presses)
+    if button == 1 then
+        mouseDown = true
+    end
+end
+
+function mode_move.mousereleased(x, y, button, isTouch, presses)
+    if button == 1 then
+        mouseDown = false
+    end
 end
 
 

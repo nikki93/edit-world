@@ -53,10 +53,10 @@ if not castle.system.isRemoteServer() then
         -- Filter
         local filter = image:getFilter()
         if node.image.smoothScaling and filter == 'nearest' then
-            image:setFilter('linear')
+            image:setFilter('linear', 'linear')
         end
         if not node.image.smoothScaling and filter == 'linear' then
-            image:setFilter('nearest')
+            image:setFilter('nearest', 'nearest')
         end
 
         -- Crop
