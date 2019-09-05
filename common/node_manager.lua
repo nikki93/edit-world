@@ -44,49 +44,30 @@ end
 
 
 function NodeManager:new(opts)
-    local id = lib.uuid()
-
-    local newNode = table_utils.clone(node_types.base.DEFAULTS)
-    newNode.id = id
-    newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
-    newNode[newNode.type] = table_utils.clone(node_types[newNode.type].DEFAULTS)
-
-    if self.isServer then
-        self.shared[id] = newNode
+    local newNodeData
+    if opts.initialData then
+        newNodeData = table_utils.clone(opts.initialData)
     else
-        if opts.isControlled then
-            self.controlled[id] = newNode
-        else
-            self.shared[id] = newNode
-        end
+        newNodeData = table_utils.clone(node_types.base.DEFAULTS)
+        newNodeData[newNodeData.type] = table_utils.clone(node_types[newNodeData.type].DEFAULTS)
     end
+    newNodeData.id = lib.uuid()
+    newNodeData.rngState = love.math.newRandomGenerator(love.math.random()):getState()
 
-    return newNode
+    if self.isClient and opts.isControlled then
+        self.controlled[newNodeData.id] = newNodeData
+        return self.controlled[newNodeData.id]
+    else
+        self.shared[newNodeData.id] = newNodeData
+        return self.shared[newNodeData.id]
+    end
 end
 
 function NodeManager:clone(idOrNode, opts)
     local node = type(idOrNode) ~= 'string' and idOrNode or self:getById(idOrNode)
-
-    local id = lib.uuid()
-
-    local newNode = table_utils.clone(node)
-    newNode.id = id
-    newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
-    if newNode.parentId then
-        self:trackParent(newNode)
-    end
-
-    if self.isServer then
-        self.shared[id] = newNode
-    else
-        if opts.isControlled then
-            self.controlled[id] = newNode
-        else
-            self.shared[id] = newNode
-        end
-    end
-
-    return newNode
+    opts = table_utils.clone(opts)
+    opts.initialData = node
+    return self:new(opts)
 end
 
 
