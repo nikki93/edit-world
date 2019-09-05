@@ -11,6 +11,10 @@ function client.mousereleased(x, y, button, isTouch, presses)
     mode.mousereleased(x, y, button, isTouch, presses)
 end
 
+function client.mousemoved(x, y, dx, dy, isTouch)
+    mode.mousemoved(x, y, dx, dy, isTouch)
+end
+
 function client.wheelmoved(x, y)
     if y > 0 then
         camera.zoomIn()

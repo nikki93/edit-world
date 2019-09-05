@@ -83,7 +83,7 @@ function mode.mousereleased(x, y, button, isTouch, presses)
 end
 
 function mode.mousemoved(x, y, dx, dy, isTouch)
-    fireEvent('mousemvoed', x, y, dx, dy, isTouch)
+    fireEvent('mousemoved', x, y, dx, dy, isTouch)
 end
 
 

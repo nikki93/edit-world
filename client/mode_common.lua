@@ -19,9 +19,9 @@ function mode_common.drawForEachNode(nodeIds, func)
             local node = locals.nodeManager:getById(id)
             if node then
                 graphics_utils.safePushPop('all', function()
+                    love.graphics.applyTransform(space.getWorldSpace(node).transform)
                     func(id, node)
                 end)
-                love.graphics.applyTransform(space.getWorldSpace(node).transform)
             end
         end
     end)
