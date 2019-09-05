@@ -1,4 +1,5 @@
 local locals = require 'client.locals'
+local table_utils = require 'common.table_utils'
 
 
 local selections = {}
@@ -59,7 +60,7 @@ function selections.forEach(...)
     local func = select(nArgs, ...)
     for i = 1, nArgs - 1 do
         local selectionType = select(i, ...)
-        for id in pairs(selections[selectionType]) do
+        for id in pairs(table_utils.clone(selections[selectionType])) do
             local node = locals.nodeManager:getById(id)
             if node then
                 func(id, node)
