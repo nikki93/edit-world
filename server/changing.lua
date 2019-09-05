@@ -24,16 +24,24 @@ function server.changing(clientId, homeDiff)
         end
         for nodeId, nodeDiff in pairs(controlledDiff) do
             if nodeId ~= '__exact' then
-                if locals.nodeManager:lock(nodeId, clientId) then
-                    if nodeDiff ~= lib.state.DIFF_NIL then -- Track and apply a controlled change
+                if locals.nodeManager:canLock(nodeId, clientId) and nodeDiff == lib.state.DIFF_NIL then
+                    -- Don't needlessly lock and unlock if client is immediately releasing control
+                    locals.nodeManager:unlock(nodeId, clientId)
+                elseif locals.nodeManager:lock(nodeId, clientId) then
+                    assert(nodeDiff ~= lib.state.DIFF_NIL, 'internal error: client releasing control not caught in first branch')
+                    local alreadyDeleting = controlled[nodeId] and controlled[nodeId].deleting
+                    if alreadyDeleting or nodeDiff.deleting then -- Client requested a delete
+                        local node = locals.nodeManager:getById(nodeId)
+                        if node then
+                            locals.nodeManager:actuallyDelete(node)
+                        end
+                    else -- Client made a controlled edit to this node
                         locals.nodeManager:trackDiff(nodeId, nodeDiff, rootExact)
                         if rootExact then
                             shared[nodeId] = nodeDiff
                         else
                             shared[nodeId] = table_utils.applyDiff(shared[nodeId], nodeDiff)
                         end
-                    else -- Client released control of this node
-                        locals.nodeManager:unlock(nodeId, clientId)
                     end
                 end
             end

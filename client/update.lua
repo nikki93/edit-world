@@ -16,7 +16,6 @@ function client.update(dt)
         return
     end
 
-    locals.nodeManager:processDeletions()
     locals.nodeManager:runThinkRules(dt)
 
     if home.player then

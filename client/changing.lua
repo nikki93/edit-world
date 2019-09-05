@@ -21,7 +21,7 @@ function client.changing(shareDiff)
                 else -- Server deleted this node
                     local node = locals.nodeManager:getById(nodeId)
                     if node then
-                        locals.nodeManager:delete(node)
+                        locals.nodeManager:actuallyDelete(node)
                     end
                 end
             end

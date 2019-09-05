@@ -14,6 +14,5 @@ function server.update(dt)
         end
     end
 
-    locals.nodeManager:processDeletions()
     locals.nodeManager:runThinkRules(dt)
 end

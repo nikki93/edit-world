@@ -16,7 +16,7 @@ end
 
 function mode_none.deleteNodes()
     selections.forEach('primary', function(id)
-        locals.nodeManager:trackDeletion(id)
+        locals.nodeManager:delete(id)
     end)
 end
 

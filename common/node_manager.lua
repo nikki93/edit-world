@@ -6,11 +6,6 @@ local lib = require 'common.lib'
 local node_manager = {}
 
 
-local DELETION_WAIT = 1
-local DELETION_DELETE = 2
-local DELETION_DELETED = 3
-
-
 local NodeManager = {}
 local NodeManagerMetatable = {
     __index = NodeManager,
@@ -32,12 +27,13 @@ function node_manager.new(opts)
 
         self.controlled = assert(opts.controlled)
         self.clientId = assert(opts.clientId)
+
+        self.pendingDeletions = {}      -- `node.id` -> `true` for nodes we're waiting on the server to delete for us
     end
 
-    self.proxies = {}                   -- `node.id` -> `node_types[node.type]` instance with `.node` == `node`
+    self.proxies = {}                   -- `node.id` -> rule-facing proxy for that node
     self.parentChildIndex = {}          -- `parent.id` -> `child.id` -> `true` for all `child.parentId == parent.id`
     self.parentTagChildIndex = {}       -- `parent.id` -> `tag` -> `child.id` -> `true` for all `child.parentId == parent.id and child.tags[tag]`
-    self.deletions = {}                 -- `node.id` -> (`DELETION_WAIT` or `DELETION_DELETE`)
 
     return self
 end
@@ -54,6 +50,8 @@ function NodeManager:new(opts)
     newNodeData.id = lib.uuid()
     newNodeData.rngState = love.math.newRandomGenerator(love.math.random()):getState()
 
+    -- TODO(nikki): Track if has `.parentId`
+
     if self.isClient and opts.isControlled then
         self.controlled[newNodeData.id] = newNodeData
         return self.controlled[newNodeData.id]
@@ -64,16 +62,14 @@ function NodeManager:new(opts)
 end
 
 function NodeManager:clone(idOrNode, opts)
-    local node = type(idOrNode) ~= 'string' and idOrNode or self:getById(idOrNode)
+    local node = self:resolveIdOrNode(idOrNode)
     opts = table_utils.clone(opts)
     opts.initialData = node
     return self:new(opts)
 end
 
 
-function NodeManager:delete(node)
-    node.deletion = DELETION_DELETED
-
+function NodeManager:actuallyDelete(node)
     local id = node.id
 
     local parentId = node.parentId
@@ -85,34 +81,22 @@ function NodeManager:delete(node)
     end
 
     self.proxies[id] = nil
-    self.deletions[id] = nil
     self.locks[id] = nil
 
-    if self.isServer then
-        self.shared[id] = nil
-    else
-        self.shared[id] = nil
+    if self.isClient then
+        self.pendingDeletions[id] = nil
         self.controlled[id] = nil
     end
+    self.shared[id] = nil
 end
 
-function NodeManager:trackDeletion(id, deletion)
-    self.deletions[id] = deletion or DELETION_WAIT
-end
-
-function NodeManager:processDeletions()
-    for id, deletion in pairs(self.deletions) do
-        local node = self:getById(id)
-        if node then
-            if deletion == DELETION_WAIT then
-                node.deletion = DELETION_DELETE
-                self:trackDeletion(id, node.deletion)
-            elseif deletion == DELETION_DELETE then
-                self:delete(node)
-            end
-        else
-            self.deletions[id] = nil
-        end
+function NodeManager:delete(idOrNode)
+    local node = self:resolveIdOrNode(idOrNode)
+    if self.isServer then
+        self:actuallyDelete(node)
+    elseif self.isClient and self.controlled[node.id] then
+        node.deleting = true
+        self.pendingDeletions[node.id] = true
     end
 end
 
@@ -134,6 +118,14 @@ function NodeManager:hasControl(id)
     return self.controlled[id] ~= nil
 end
 
+
+function NodeManager:resolveIdOrNode(idOrNode)
+    if type(idOrNode) == 'string' then
+        return self:getById(idOrNode)
+    else
+        return idOrNode
+    end
+end
 
 function NodeManager:getById(id)
     if id == nil then
@@ -287,18 +279,10 @@ function NodeManager:trackDiff(id, diff, rootExact)
                 end
             end
         end
-
-        if diff.deletion then
-            self:trackDeletion(id, diff.deletion)
-        end
     else -- New node
         if diff.parentId then
             self:trackParent(id, diff.parentId)
             self:trackTags(id, diff.parentId, diff.tags)
-        end
-
-        if diff.deletion then
-            self:trackDeletion(id, diff.deletion)
         end
     end
 end
@@ -311,7 +295,7 @@ end
 function NodeManager:lock(id, clientId)
     assert(self.isServer, 'only servers can `:lock`')
     local lock = self.locks[id]
-    if lock == nil then -- Not locked, acquire
+    if not lock then -- Not locked, acquire
         self.locks[id] = clientId
         return true
     end
@@ -327,7 +311,8 @@ end
 
 function NodeManager:canLock(id, clientId)
     clientId = clientId or self.clientId
-    return not self.locks[id] or self.locks[id] == clientId
+    local lock = self.locks[id]
+    return not lock or lock == clientId
 end
 
 
