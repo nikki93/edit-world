@@ -7,13 +7,13 @@ local mode = {}
 local modes = {}
 
 modes.none = require 'client.mode_none'
-modes.grab = require 'client.mode_grab'
+modes.move = require 'client.mode_move'
 modes.rotate = require 'client.mode_rotate'
 modes.resize = require 'client.mode_resize'
 
 local order = {
     'none',
-    'grab',
+    'move',
     'rotate',
     'resize',
 }
@@ -80,6 +80,10 @@ end
 
 function mode.mousereleased(x, y, button, isTouch, presses)
     fireEvent('mousereleased', x, y, button, isTouch, presses)
+end
+
+function mode.mousemoved(x, y, dx, dy, isTouch)
+    fireEvent('mousemvoed', x, y, dx, dy, isTouch)
 end
 
 

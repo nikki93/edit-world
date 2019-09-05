@@ -53,6 +53,21 @@ function selections.deselectAll()
     end
 end
 
+function selections.forEach(...)
+    local nArgs = select('#', ...)
+    assert(nArgs >= 2, '`selections.forEach` needs at least 2 arguments')
+    local func = select(nArgs, ...)
+    for i = 1, nArgs - 1 do
+        local selectionType = select(i, ...)
+        for id in pairs(selections[selectionType]) do
+            local node = locals.nodeManager:getById(id)
+            if node then
+                func(id, node)
+            end
+        end
+    end
+end
+
 
 function selections.clearDeletedSelections()
     for _, selectionType in ipairs(selectionTypes) do
