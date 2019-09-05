@@ -1,7 +1,7 @@
 local client = require 'client.init'
 local selections = require 'client.selections'
 local ui = castle.ui
-local mode_none = require 'client.mode_none'
+local mode_select = require 'client.mode_select'
 
 
 local function uiRow(id, ...)
@@ -21,15 +21,15 @@ end
 local function uiNodesTopBar()
     uiRow('top-bar', function()
         if ui.button('new') then
-            mode_none.newNode()
+            mode_select.newNode()
         end
     end, function()
         if selections.isAnySelected('primary') and ui.button('delete', { kind = 'danger' }) then
-            mode_none.deleteNodes()
+            mode_select.deleteNodes()
         end
     end, function()
         if selections.isAnySelected('primary') and ui.button('clone') then
-            mode_none.cloneNodes()
+            mode_select.cloneNodes()
         end
     end)
 end

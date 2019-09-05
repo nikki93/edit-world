@@ -6,20 +6,20 @@ local mode = {}
 
 mode.modes = {}
 
-mode.modes.none = require 'client.mode_none'
+mode.modes.select = require 'client.mode_select'
 mode.modes.move = require 'client.mode_move'
 mode.modes.rotate = require 'client.mode_rotate'
 mode.modes.resize = require 'client.mode_resize'
 
 mode.order = {
-    'none',
+    'select',
     'move',
     'rotate',
     'resize',
 }
 
 
-local currentMode = 'none'
+local currentMode = 'select'
 
 local function fireEvent(eventName, ...)
     local func = mode.modes[currentMode][eventName]

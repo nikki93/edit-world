@@ -5,22 +5,22 @@ local space = require 'client.space'
 local camera = require 'client.camera'
 
 
-local mode_none = {}
+local mode_select = {}
 
 
-function mode_none.newNode()
+function mode_select.newNode()
     selections.deselectAll()
     local newNode = locals.nodeManager:new({ isControlled = true })
     selections.attemptPrimarySelect(newNode.id)
 end
 
-function mode_none.deleteNodes()
+function mode_select.deleteNodes()
     selections.forEach('primary', function(id)
         locals.nodeManager:delete(id)
     end)
 end
 
-function mode_none.cloneNodes()
+function mode_select.cloneNodes()
     selections.forEach('primary', function(id)
         local newNode = locals.nodeManager:clone(id, { isControlled = true })
         newNode.x, newNode.y = newNode.x + 1, newNode.y + 1
@@ -30,7 +30,7 @@ function mode_none.cloneNodes()
 end
 
 
-function mode_none.clickSelect(screenMouseX, screenMouseY)
+function mode_select.clickSelect(screenMouseX, screenMouseY)
     -- Collect hits
     local hits = {}
     local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
@@ -61,11 +61,11 @@ function mode_none.clickSelect(screenMouseX, screenMouseY)
     end
 end
 
-function mode_none.mousepressed(x, y, button)
+function mode_select.mousepressed(x, y, button)
     if button == 1 then
-        mode_none.clickSelect(x, y)
+        mode_select.clickSelect(x, y)
     end
 end
 
 
-return mode_none
+return mode_select
