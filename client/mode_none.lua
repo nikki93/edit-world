@@ -15,9 +15,17 @@ function mode_none.newNode()
 end
 
 function mode_none.deleteNodes()
+    for id in pairs(selections.primary) do
+        locals.nodeManager:trackDeletion(id)
+    end
 end
 
 function mode_none.cloneNodes()
+    for id in pairs(selections.primary) do
+        local newNode = locals.nodeManager:clone(id, { isControlled = true })
+        selections.deselect(id, 'primary')
+        selections.attemptPrimarySelect(newNode.id)
+    end
 end
 
 

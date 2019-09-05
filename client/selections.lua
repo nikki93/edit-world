@@ -8,6 +8,8 @@ selections.primary = {}
 selections.secondary = {}
 selections.conflicting = {}
 
+local selectionTypes = { 'primary', 'secondary', 'conflicting' }
+
 
 function selections.isAnySelected(selectionType, ...)
     if selectionType == nil then
@@ -34,18 +36,26 @@ function selections.attemptPrimarySelect(id, conflictingSelectIfFail)
     end
 end
 
+function selections.deselect(id, selectionType, ...)
+    if selectionType == nil then
+        return
+    end
+    selections[selectionType][id] = nil
+    selections.deselect(id, ...)
+end
+
 function selections.deselectAll()
     for id in pairs(selections.primary) do
         locals.nodeManager:uncontrol(id)
     end
-    selections.primary = {}
-    selections.secondary = {}
-    selections.conflicting = {}
+    for _, selectionType in ipairs(selectionTypes) do
+        selections[selectionType] = {}
+    end
 end
 
 
 function selections.clearDeletedSelections()
-    for _, selectionType in ipairs({ 'primary', 'secondary', 'conflicting' }) do
+    for _, selectionType in ipairs(selectionTypes) do
         for id in pairs(selections[selectionType]) do
             if not locals.nodeManager:getById(id) then
                 selections[selectionType][id] = nil

@@ -64,7 +64,9 @@ function NodeManager:new(opts)
     return newNode
 end
 
-function NodeManager:clone(node)
+function NodeManager:clone(idOrNode, opts)
+    local node = type(idOrNode) ~= 'string' and idOrNode or self:getById(idOrNode)
+
     local id = lib.uuid()
 
     local newNode = table_utils.clone(node)
@@ -72,6 +74,16 @@ function NodeManager:clone(node)
     newNode.rngState = love.math.newRandomGenerator(love.math.random()):getState()
     if newNode.parentId then
         self:trackParent(newNode)
+    end
+
+    if self.isServer then
+        self.shared[id] = newNode
+    else
+        if opts.isControlled then
+            self.controlled[id] = newNode
+        else
+            self.shared[id] = newNode
+        end
     end
 
     return newNode
@@ -104,7 +116,7 @@ function NodeManager:delete(node)
 end
 
 function NodeManager:trackDeletion(id, deletion)
-    self.deletions[id] = deletion
+    self.deletions[id] = deletion or DELETION_WAIT
 end
 
 function NodeManager:processDeletions()
@@ -249,43 +261,47 @@ function NodeManager:trackDiff(id, diff, rootExact)
 
             -- Track new parent
             self:trackParent(id, newParentId)
-            if rootExact or diff.__exact or diff.tags.__exact then -- Exact new tags
-                for tag in pairs(diff.tags) do
-                    if tag ~= '__exact' then
-                        self:trackTag(id, newParentId, tag)
+            if diff.tags then
+                if rootExact or diff.__exact or diff.tags.__exact then -- Exact new tags
+                    for tag in pairs(diff.tags) do
+                        if tag ~= '__exact' then
+                            self:trackTag(id, newParentId, tag)
+                        end
                     end
-                end
-            else -- Diff'd new tags
-                for tag in pairs(node.tags) do
-                    if diff.tags[tag] ~= lib.state.DIFF_NIL then -- Old tag and not removed in new
-                        self:trackTag(id, newParentId, tag)
+                else -- Diff'd new tags
+                    for tag in pairs(node.tags) do
+                        if diff.tags[tag] ~= lib.state.DIFF_NIL then -- Old tag and not removed in new
+                            self:trackTag(id, newParentId, tag)
+                        end
                     end
-                end
-                for tag in pairs(diff.tags) do
-                    if not node.tags[tag] then -- New tag
-                        self:trackTag(id, newParentId, tag)
+                    for tag in pairs(diff.tags) do
+                        if not node.tags[tag] then -- New tag
+                            self:trackTag(id, newParentId, tag)
+                        end
                     end
                 end
             end
         else -- Parent didn't change, just track tag changes
-            local parentId = newParentId
-            if rootExact or diff.__exact or diff.tags.__exact then -- Exact new tags
-                for tag in pairs(node.tags) do
-                    if not diff.tags[tag] then -- Old tag and removed in new
-                        self:untrackTag(id, parentId, tag)
+            if diff.tags then
+                local parentId = newParentId
+                if rootExact or diff.__exact or diff.tags.__exact then -- Exact new tags
+                    for tag in pairs(node.tags) do
+                        if not diff.tags[tag] then -- Old tag and removed in new
+                            self:untrackTag(id, parentId, tag)
+                        end
                     end
-                end
-                for tag in pairs(diff.tags) do
-                    if tag ~= '__exact' and not node.tags[tag] then -- New tag
-                        self:trackTag(id, parentId, tag)
+                    for tag in pairs(diff.tags) do
+                        if tag ~= '__exact' and not node.tags[tag] then -- New tag
+                            self:trackTag(id, parentId, tag)
+                        end
                     end
-                end
-            else
-                for tag, v in pairs(diff.tags) do
-                    if v == lib.state.DIFF_NIL then -- Tag removed
-                        self:untrackTag(id, parentId, tag)
-                    else -- Tag added
-                        self:trackTag(id, parentId, tag)
+                else
+                    for tag, v in pairs(diff.tags) do
+                        if v == lib.state.DIFF_NIL then -- Tag removed
+                            self:untrackTag(id, parentId, tag)
+                        else -- Tag added
+                            self:trackTag(id, parentId, tag)
+                        end
                     end
                 end
             end
