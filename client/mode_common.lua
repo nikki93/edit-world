@@ -49,4 +49,14 @@ function mode_common.drawWorldSpace()
 end
 
 
+function mode_common.wheelmoved(x, y)
+    if y > 0 then
+        camera.zoomIn()
+    end
+    if y < 0 then
+        camera.zoomOut()
+    end
+end
+
+
 return mode_common

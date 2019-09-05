@@ -16,8 +16,6 @@ function client.update(dt)
         return
     end
 
-    space.clearWorldSpaceCache()
-
     selections.clearDeletedSelections()
 
     locals.nodeManager:processDeletions()
@@ -30,4 +28,6 @@ function client.update(dt)
     camera.update(dt)
 
     mode.update(dt)
+
+    space.clearWorldSpaceCache()
 end

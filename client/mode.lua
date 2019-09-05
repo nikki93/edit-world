@@ -86,5 +86,9 @@ function mode.mousemoved(x, y, dx, dy, isTouch)
     fireEvent('mousemoved', x, y, dx, dy, isTouch)
 end
 
+function mode.wheelmoved(x, y)
+    fireEvent('wheelmoved', x, y)
+end
+
 
 return mode

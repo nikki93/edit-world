@@ -1,6 +1,5 @@
 local client = require 'client.init'
 local mode = require 'client.mode'
-local camera = require 'client.camera'
 
 
 function client.mousepressed(x, y, button, isTouch, presses)
@@ -16,10 +15,5 @@ function client.mousemoved(x, y, dx, dy, isTouch)
 end
 
 function client.wheelmoved(x, y)
-    if y > 0 then
-        camera.zoomIn()
-    end
-    if y < 0 then
-        camera.zoomOut()
-    end
+    mode.wheelmoved(x, y)
 end
