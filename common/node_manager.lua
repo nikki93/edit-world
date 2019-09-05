@@ -27,8 +27,6 @@ function node_manager.new(opts)
 
         self.controlled = assert(opts.controlled)
         self.clientId = assert(opts.clientId)
-
-        self.pendingDeletions = {}      -- `node.id` -> `true` for nodes we're waiting on the server to delete for us
     end
 
     self.proxies = {}                   -- `node.id` -> rule-facing proxy for that node
@@ -84,7 +82,6 @@ function NodeManager:actuallyDelete(node)
     self.locks[id] = nil
 
     if self.isClient then
-        self.pendingDeletions[id] = nil
         self.controlled[id] = nil
     end
     self.shared[id] = nil
@@ -96,7 +93,6 @@ function NodeManager:delete(idOrNode)
         self:actuallyDelete(node)
     elseif self.isClient and self.controlled[node.id] then
         node.deleting = true
-        self.pendingDeletions[node.id] = true
     end
 end
 
