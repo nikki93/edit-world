@@ -17,7 +17,7 @@ node_image.DEFAULTS = {
 
 
 node_image.proxyMethods = setmetatable({}, { __index = node_base.proxyMethods })
-node_image.proxyMetatable = { __index = proxyMethods }
+node_image.proxyMetatable = { __index = node_image.proxyMethods }
 
 
 if not castle.system.isRemoteServer() then

@@ -43,7 +43,7 @@ function client.draw()
             end)
             table.sort(order, space.compareDepth)
             for _, node in ipairs(order) do
-                locals.nodeManager:getProxy(node):draw(transform)
+                locals.nodeManager:getProxy(node):draw(space.getWorldSpace(node).transform)
             end
         end)
 

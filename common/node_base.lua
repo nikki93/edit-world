@@ -22,9 +22,7 @@ node_base.proxyMethods = setmetatable({}, {
         end
     end,
 })
-node_base.proxyMetatable = {
-    __index = proxyMethods,
-}
+node_base.proxyMetatable = { __index = node_base.proxyMethods }
 
 function node_base.proxyMethods:getId()
     return self.__node.id
