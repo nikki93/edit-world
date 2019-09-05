@@ -31,11 +31,6 @@ end
 
 
 function mode_none.clickSelect(screenMouseX, screenMouseY)
-    -- Deselect everything first, unless multi-selecting
-    if not (love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl')) then
-        selections.deselectAll()
-    end
-
     -- Collect hits
     local hits = {}
     local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
@@ -56,6 +51,11 @@ function mode_none.clickSelect(screenMouseX, screenMouseY)
         end
     end
     pick = pick or hits[#hits]
+
+    -- Deselect everything first if not multi-selecting, then select the pick
+    if not (love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl')) then
+        selections.deselectAll()
+    end
     if pick then
         selections.attemptPrimarySelect(pick.id)
     end
