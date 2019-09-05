@@ -4,14 +4,14 @@ local mode_common = require 'client.mode_common'
 local mode = {}
 
 
-local modes = {}
+mode.modes = {}
 
-modes.none = require 'client.mode_none'
-modes.move = require 'client.mode_move'
-modes.rotate = require 'client.mode_rotate'
-modes.resize = require 'client.mode_resize'
+mode.modes.none = require 'client.mode_none'
+mode.modes.move = require 'client.mode_move'
+mode.modes.rotate = require 'client.mode_rotate'
+mode.modes.resize = require 'client.mode_resize'
 
-local order = {
+mode.order = {
     'none',
     'move',
     'rotate',
@@ -22,7 +22,7 @@ local order = {
 local currentMode = 'none'
 
 local function fireEvent(eventName, ...)
-    local func = modes[currentMode][eventName]
+    local func = mode.modes[currentMode][eventName]
     if func then
         func(...)
     else
@@ -61,8 +61,8 @@ end
 
 function mode.keypressed(key, scancode, isRepeat)
     local number = tonumber(key)
-    if number ~= nil and 1 <= number and number <= #order then
-        mode.setMode(order[number])
+    if number ~= nil and 1 <= number and number <= #mode.order then
+        mode.setMode(mode.order[number])
         return
     end
 
