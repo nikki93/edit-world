@@ -45,7 +45,7 @@ if not castle.system.isRemoteServer() then
     local theQuad = love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 
     function node_image.proxyMethods:draw(transform)
-        local node = self.__nodeManager:getById(self.__id)
+        local node = self.__node
 
         -- Image
         local image = node_image.imageFromUrl(node.image.url)
