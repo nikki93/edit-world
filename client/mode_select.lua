@@ -3,10 +3,16 @@ local locals = require 'client.locals'
 local graphics_utils = require 'client.graphics_utils'
 local space = require 'client.space'
 local camera = require 'client.camera'
+local ui_utils = require 'common.ui_utils'
+local ui = castle.ui
 
 
 local mode_select = {}
 
+
+--
+-- Common
+--
 
 function mode_select.newNode()
     selections.deselectAll()
@@ -31,6 +37,24 @@ function mode_select.cloneNodes()
     end)
 end
 
+
+--
+-- Keyboard
+--
+
+function mode_select.keypressed(key)
+    if key == 'n' then
+        mode_select.newNode()
+    end
+    if key == 'c' then
+        mode_select.cloneNodes()
+    end
+end
+
+
+--
+-- Mouse
+--
 
 function mode_select.clickSelect(screenMouseX, screenMouseY)
     -- Collect hits
@@ -63,20 +87,31 @@ function mode_select.clickSelect(screenMouseX, screenMouseY)
     end
 end
 
-
-function mode_select.keypressed(key)
-    if key == 'n' then
-        mode_select.newNode()
-    end
-    if key == 'c' then
-        mode_select.cloneNodes()
-    end
-end
-
 function mode_select.mousepressed(x, y, button)
     if button == 1 then
         mode_select.clickSelect(x, y)
     end
+end
+
+
+--
+-- UI
+--
+
+function mode_select.uiupdate()
+    ui_utils.row('top-bar', function()
+        if ui.button('new') then
+            mode_select.newNode()
+        end
+    end, function()
+        if selections.isAnySelected('primary') and ui.button('delete', { kind = 'danger' }) then
+            mode_select.deleteNodes()
+        end
+    end, function()
+        if selections.isAnySelected('primary') and ui.button('clone') then
+            mode_select.cloneNodes()
+        end
+    end)
 end
 
 

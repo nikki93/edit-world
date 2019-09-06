@@ -91,4 +91,9 @@ function mode.wheelmoved(x, y)
 end
 
 
+function mode.uiupdate()
+    fireEvent('uiupdate')
+end
+
+
 return mode
