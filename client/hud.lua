@@ -405,12 +405,28 @@ function hud.draw()
         love.graphics.setFont(font)
         for i = 1, #modeButtons do
             local b = modeButtons[i]
+
+            -- Decide on button type
             local buttonType = 'button_normal'
             if mode.getMode() == b.modeName then
                 buttonType = 'button_selected'
             end
+
+            -- Button
             drawBoxPart(buttonType, b.x, b.y, b.w, b.h)
-            love.graphics.printf(b.modeName, b.x, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
+
+            -- Mode text
+            love.graphics.printf(b.modeName, b.x + 2, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
+
+            -- Hotkey
+            graphics_utils.safePushPop('all', function()
+                local part = sheetParts[buttonType]
+                love.graphics.translate(b.x + MODE_BUTTON_WIDTH, b.y + MODE_BUTTON_HEIGHT)
+                love.graphics.scale(0.5, 0.5)
+                local hotkey = tostring(i)
+                love.graphics.translate(-font:getWidth(hotkey) - part.w3, -font:getHeight() - part.h3 - 4)
+                love.graphics.print(hotkey)
+            end)
         end
     end)
 end

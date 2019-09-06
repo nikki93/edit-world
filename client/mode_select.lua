@@ -11,6 +11,8 @@ local mode_select = {}
 function mode_select.newNode()
     selections.deselectAll()
     local newNode = locals.nodeManager:new({ isControlled = true })
+    local windowW, windowH = love.graphics.getDimensions()
+    newNode.x, newNode.y = camera.getTransform():inverseTransformPoint(0.5 * windowW, 0.5 * windowH)
     selections.attemptPrimarySelect(newNode.id)
 end
 
@@ -58,6 +60,16 @@ function mode_select.clickSelect(screenMouseX, screenMouseY)
     end
     if pick then
         selections.attemptPrimarySelect(pick.id)
+    end
+end
+
+
+function mode_select.keypressed(key)
+    if key == 'n' then
+        mode_select.newNode()
+    end
+    if key == 'c' then
+        mode_select.cloneNode()
     end
 end
 

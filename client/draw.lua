@@ -18,6 +18,31 @@ local function drawBackground()
     love.graphics.clear(c.r, c.g, c.b)
 end
 
+
+local debugHUDText = love.graphics.newText(hud.getFont())
+
+local function drawDebugHUD()
+    local text = ''
+
+    text = text .. '\nfps: ' .. love.timer.getFPS()
+
+    local zoomFactor = camera.getZoomFactor()
+    if zoomFactor < 1 then
+        text = text .. '\nzoom in: ' .. (1 / zoomFactor) .. 'x'
+    end
+    if zoomFactor > 1 then
+        text = text .. '\nzoom out: ' .. zoomFactor .. 'x'
+    end
+
+    local windowW, windowH = love.graphics.getDimensions()
+    debugHUDText:clear()
+    debugHUDText:setFont(hud.getFont())
+    debugHUDText:addf(text, windowW - 20, 'right')
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.draw(debugHUDText, 0, windowH - debugHUDText:getHeight() - 20)
+end
+
+
 function client.draw()
     -- Connecting / loading?
     if not client.connected then
@@ -30,7 +55,9 @@ function client.draw()
     end
 
     -- Background
-    drawBackground()
+    graphics_utils.safePushPop('all', function()
+        drawBackground()
+    end)
 
     -- Camera transform
     graphics_utils.safePushPop('all', function()
@@ -70,19 +97,12 @@ function client.draw()
     end)
 
     -- HUD
-    hud.draw()
+    graphics_utils.safePushPop('all', function()
+        hud.draw()
+    end)
 
     -- Debug HUD
     graphics_utils.safePushPop('all', function()
-        love.graphics.setFont(hud.getFont())
-        love.graphics.setColor(0, 0, 0)
-        love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
-        local zoomFactor = camera.getZoomFactor()
-        if zoomFactor < 1 then
-            love.graphics.print('\nzoom in: ' .. (1 / zoomFactor) .. 'x', 20, 20)
-        end
-        if zoomFactor > 1 then
-            love.graphics.print('\nzoom out: ' .. zoomFactor .. 'x', 20, 20)
-        end
+        drawDebugHUD()
     end)
 end
