@@ -1,7 +1,8 @@
-main: main_castle.lua
+main: main_client.lua
 title: Edit World
 owner: nikki
 description: Edit the world!!!1
 coverImage: cover.png
 multiplayer:
     enabled: true
+    serverMain: main_server.lua

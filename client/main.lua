@@ -1,3 +1,5 @@
+debug_utils = require 'common.debug_utils'
+
 require 'client.init' -- Must be called first!
 
 -- Top-level events
