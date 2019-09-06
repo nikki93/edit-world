@@ -41,7 +41,7 @@ local function drawSlice(name, x, y, w, h, quadName)
     return w, h
 end
 
-local function drawBoxSlice(name, x, y, w, h, noMiddle)
+local function drawRectSlices(name, x, y, w, h, noMiddle)
     local slice = hud_sheet.slices[name]
     local w1, w2, w3, h1, h2, h3 = slice.w1, slice.w2, slice.w3, slice.h1, slice.h2, slice.h3
 
@@ -103,29 +103,41 @@ local function drawModeButtons()
         for i = 1, #modeButtons do
             local b = modeButtons[i]
 
-            -- Decide on button type
+            -- Pick button type
             local buttonType = 'button_normal'
             if mode.getMode() == b.modeName then
                 buttonType = 'button_selected'
             end
 
-            -- Button
-            drawBoxSlice(buttonType, b.x, b.y, b.w, b.h)
+            -- Background
+            drawRectSlices(buttonType, b.x, b.y, b.w, b.h)
 
             -- Mode text
             love.graphics.printf(b.modeName, b.x + 2, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
 
-            -- Hotkey
+            -- Hotkey text
             graphics_utils.safePushPop('all', function()
                 local slice = hud_sheet.slices[buttonType]
                 love.graphics.translate(b.x + MODE_BUTTON_WIDTH, b.y + MODE_BUTTON_HEIGHT)
                 love.graphics.scale(0.5, 0.5)
-                local hotkey = tostring(i)
-                love.graphics.translate(-font:getWidth(hotkey) - slice.w3, -font:getHeight() - slice.h3 - 4)
-                love.graphics.print(hotkey)
+                local hotkeyText = tostring(i)
+                love.graphics.translate(-font:getWidth(hotkeyText) - slice.w3, -font:getHeight() - slice.h3 - 4)
+                love.graphics.print(hotkeyText)
             end)
         end
     end)
+end
+
+local function checkModeButtonClick(x, y, mouseButton)
+    if mouseButton == 1 then
+        for _, b in ipairs(modeButtons) do
+            if b.x <= x and x <= b.x + b.w and b.y <= y and y <= b.y + b.h then
+                mode.setMode(b.modeName)
+                return true
+            end
+        end
+    end
+    return false
 end
 
 
@@ -142,17 +154,14 @@ end
 -- Mouse
 --
 
-function hud.mousepressed(x, y, button, isTouch, presses)
-    for _, b in ipairs(modeButtons) do
-        if b.x <= x and x <= b.x + b.w and b.y <= y and y <= b.y + b.h then
-            mode.setMode(b.modeName)
-            return true
-        end
+function hud.mousepressed(x, y, mouseButton, isTouch, presses)
+    if checkModeButtonClick(x, y, mouseButton) then
+        return true
     end
     return false
 end
 
-function hud.mousereleased(x, y, button, isTouch, presses)
+function hud.mousereleased(x, y, mouseButton, isTouch, presses)
 end
 
 function hud.mousemoved(x, y, dx, dy, isTouch)
