@@ -23,10 +23,6 @@ function camera.getTransform()
     return transform
 end
 
-function camera.getPixelLineWidth()
-    return width / love.graphics.getWidth()
-end
-
 
 local function zoomBy(by)
     zoomExponent = math.min(math.max(MIN_ZOOM_EXPONENT, zoomExponent + by), MAX_ZOOM_EXPONENT)
