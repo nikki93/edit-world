@@ -20,7 +20,7 @@ node_image.proxyMethods = setmetatable({}, { __index = node_base.proxyMethods })
 node_image.proxyMetatable = { __index = node_image.proxyMethods }
 
 
-if CASTLE_SERVER then
+if not CASTLE_SERVER then
     local defaultImage = love.graphics.newImage('assets/checkerboard.png')
 
     local imageCache = {}
