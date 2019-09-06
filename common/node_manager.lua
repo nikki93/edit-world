@@ -350,7 +350,7 @@ function NodeManager:getProxy(idOrNode)
     local proxy = self.proxies[node.id]
     if not proxy then
         proxy = setmetatable({
-            __node = node,
+            __id = node.id,
             __nodeManager = self,
         }, node_types[node.type].proxyMetatable)
         self.proxies[node.id] = proxy
