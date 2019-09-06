@@ -69,7 +69,7 @@ function mode_select.keypressed(key)
         mode_select.newNode()
     end
     if key == 'c' then
-        mode_select.cloneNode()
+        mode_select.cloneNodes()
     end
 end
 
