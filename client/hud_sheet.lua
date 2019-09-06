@@ -295,11 +295,11 @@ hud_sheet.slices = {
 
 do
     local W, H = hud_sheet.image:getDimensions()
-    for name, slice in pairs(hud_sheet.slices) do
+    for sliceName, slice in pairs(hud_sheet.slices) do
         slice.quads = {}
-        if slice.w then
-            slice.quads.main = love.graphics.newQuad(slice.x, slice.y, slice.w, slice.h, W, H)
-        elseif slice.w1 then
+        if slice.w then -- Single quad
+            slice.quads.single = love.graphics.newQuad(slice.x, slice.y, slice.w, slice.h, W, H)
+        elseif slice.w1 then -- 3x3 quads
             local x, y, w1, w2, w3, h1, h2, h3 = slice.x, slice.y, slice.w1, slice.w2, slice.w3, slice.h1, slice.h2, slice.h3
             slice.quads.top_left = love.graphics.newQuad(x, y, w1, h1, W, H)
             slice.quads.top = love.graphics.newQuad(x + w1, y, w2, h1, W, H)

@@ -27,8 +27,8 @@ hud.reloadFonts()
 -- Slice drawing
 --
 
-local function drawSlice(name, x, y, w, h, quadName)
-    local quad = hud_sheet.slices[name].quads[quadName or 'main']
+local function drawSlice(sliceName, x, y, w, h, quadName)
+    local quad = hud_sheet.slices[sliceName].quads[quadName or 'single']
     assert(quad, 'internal error: quad not found -- may need `quadName`')
     local quadX, quadY, quadWidth, quadHeight = quad:getViewport()
     if not w then
@@ -38,28 +38,27 @@ local function drawSlice(name, x, y, w, h, quadName)
         h = quadHeight / quadWidth * w
     end
     love.graphics.draw(hud_sheet.image, quad, x, y, 0, w / quadWidth, h / quadHeight)
-    return w, h
 end
 
-local function drawRectSlices(name, x, y, w, h, noMiddle)
-    local slice = hud_sheet.slices[name]
+local function draw3x3Slice(sliceName, x, y, w, h, noMiddle)
+    local slice = hud_sheet.slices[sliceName]
     local w1, w2, w3, h1, h2, h3 = slice.w1, slice.w2, slice.w3, slice.h1, slice.h2, slice.h3
 
     -- Corners
-    drawSlice(name, x, y, w1, h1, 'top_left')
-    drawSlice(name, x + w - w3, y, w3, h1, 'top_right')
-    drawSlice(name, x, y + h - h3, w1, h3, 'bottom_left')
-    drawSlice(name, x + w - w3, y + h - h3, w3, h3, 'bottom_right')
+    drawSlice(sliceName, x, y, w1, h1, 'top_left')
+    drawSlice(sliceName, x + w - w3, y, w3, h1, 'top_right')
+    drawSlice(sliceName, x, y + h - h3, w1, h3, 'bottom_left')
+    drawSlice(sliceName, x + w - w3, y + h - h3, w3, h3, 'bottom_right')
 
     -- Edges
-    drawSlice(name, x + w1, y, w - w1 - w3, h1, 'top')
-    drawSlice(name, x + w1, y + h - h3, w - w1 - w3, h3, 'bottom')
-    drawSlice(name, x, y + h1, w1, h - h1 - h3, 'left')
-    drawSlice(name, x + w - w3, y + h1, w3, h - h1 - h3, 'right')
+    drawSlice(sliceName, x + w1, y, w - w1 - w3, h1, 'top')
+    drawSlice(sliceName, x + w1, y + h - h3, w - w1 - w3, h3, 'bottom')
+    drawSlice(sliceName, x, y + h1, w1, h - h1 - h3, 'left')
+    drawSlice(sliceName, x + w - w3, y + h1, w3, h - h1 - h3, 'right')
 
     -- Middle
     if not noMiddle then
-        drawSlice(name, x + w1, y + h1, w - w1 - w3, h - h1 - h3, 'middle')
+        drawSlice(sliceName, x + w1, y + h1, w - w1 - w3, h - h1 - h3, 'middle')
     end
 end
 
@@ -103,21 +102,21 @@ local function drawModeButtons()
         for i = 1, #modeButtons do
             local b = modeButtons[i]
 
-            -- Pick button type
-            local buttonType = 'button_normal'
+            -- Pick slice
+            local sliceName = 'button_normal'
             if mode.getMode() == b.modeName then
-                buttonType = 'button_selected'
+                sliceName = 'button_selected'
             end
 
             -- Background
-            drawRectSlices(buttonType, b.x, b.y, b.w, b.h)
+            draw3x3Slice(sliceName, b.x, b.y, b.w, b.h)
 
             -- Mode text
             love.graphics.printf(b.modeName, b.x + 2, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
 
             -- Hotkey text
             graphics_utils.safePushPop('all', function()
-                local slice = hud_sheet.slices[buttonType]
+                local slice = hud_sheet.slices[sliceName]
                 love.graphics.translate(b.x + MODE_BUTTON_WIDTH, b.y + MODE_BUTTON_HEIGHT)
                 love.graphics.scale(0.5, 0.5)
                 local hotkeyText = tostring(i)
