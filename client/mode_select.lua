@@ -56,7 +56,7 @@ end
 -- Mouse
 --
 
-function mode_select.clickSelect(screenMouseX, screenMouseY)
+function mode_select.mouseClickSelect(screenMouseX, screenMouseY)
     -- Collect hits
     local hits = {}
     local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
@@ -89,7 +89,7 @@ end
 
 function mode_select.mousepressed(x, y, button)
     if button == 1 then
-        mode_select.clickSelect(x, y)
+        mode_select.mouseClickSelect(x, y)
     end
 end
 

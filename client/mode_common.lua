@@ -8,6 +8,10 @@ local camera = require 'client.camera'
 local mode_common = {}
 
 
+--
+-- Draw
+--
+
 function mode_common.drawBoundingBox(node)
     love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
 end
@@ -48,6 +52,10 @@ function mode_common.drawWorldSpace()
     mode_common.drawSelections()
 end
 
+
+--
+-- Mouse
+--
 
 function mode_common.wheelmoved(x, y)
     if y > 0 then
