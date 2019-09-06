@@ -363,7 +363,7 @@ function hud.getFont()
 end
 
 function hud.reloadFonts()
-    font = love.graphics.newFont('assets/font.ttf', 12)
+    font = love.graphics.newFont('assets/font.ttf', 12, 'mono')
     font:setFilter('nearest', 'nearest')
 end
 hud.reloadFonts()
