@@ -21,7 +21,7 @@ node_image.proxyMetatable = { __index = node_image.proxyMethods }
 
 
 if not castle.system.isRemoteServer() then
-    local defaultImage = love.graphics.newImage('checkerboard.png')
+    local defaultImage = love.graphics.newImage('assets/checkerboard.png')
 
     local imageCache = {}
 

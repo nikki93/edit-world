@@ -5,13 +5,24 @@ local player = require 'client.player'
 local camera = require 'client.camera'
 local locals = require 'client.locals'
 local mode = require 'client.mode'
+local hud = require 'client.hud'
 
 
 local share = client.share
 local home = client.home
 
 
+local prevDPIScale = love.graphics.getDPIScale()
+
 function client.update(dt)
+    local currDPIScale = love.graphics.getDPIScale()
+    if prevDPIScale ~= currDPIScale then
+        network.async(function()
+            hud.reloadFonts()
+        end)
+        prevDPIScale = currDPIScale
+    end
+
     if not client.connected then
         return
     end

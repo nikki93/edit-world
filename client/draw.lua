@@ -74,6 +74,7 @@ function client.draw()
 
     -- Debug HUD
     graphics_utils.safePushPop('all', function()
+        love.graphics.setFont(hud.getFont())
         love.graphics.setColor(0, 0, 0)
         love.graphics.print('fps: ' .. love.timer.getFPS(), 20, 20)
         local zoomFactor = camera.getZoomFactor()

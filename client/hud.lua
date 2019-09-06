@@ -356,7 +356,19 @@ local function drawBoxPart(name, x, y, w, h, noMiddle)
 end
 
 
-local font = love.graphics.newFont(14)
+local font 
+
+function hud.getFont()
+    return font
+end
+
+function hud.reloadFonts()
+    font = love.graphics.newFont('assets/font.ttf', 12)
+    font:setFilter('nearest', 'nearest')
+end
+hud.reloadFonts()
+
+
 local windowW, windowH = love.graphics.getDimensions()
 
 
@@ -390,6 +402,7 @@ end
 
 function hud.draw()
     graphics_utils.safePushPop('all', function()
+        love.graphics.setFont(font)
         for i = 1, #modeButtons do
             local b = modeButtons[i]
             local buttonType = 'button_normal'
@@ -397,7 +410,7 @@ function hud.draw()
                 buttonType = 'button_selected'
             end
             drawBoxPart(buttonType, b.x, b.y, b.w, b.h)
-            love.graphics.printf(b.modeName, b.x, b.y + MODE_BUTTON_PADDING - 2, MODE_BUTTON_WIDTH, 'center')
+            love.graphics.printf(b.modeName, b.x, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
         end
     end)
 end
@@ -405,7 +418,7 @@ end
 
 function hud.mousepressed(x, y, button, isTouch, presses)
     for _, b in ipairs(modeButtons) do
-        if b.x <= x and x <= b.x + b.w and b.y <= y and y <= b.y + b.w then
+        if b.x <= x and x <= b.x + b.w and b.y <= y and y <= b.y + b.h then
             mode.setMode(b.modeName)
             return true
         end
