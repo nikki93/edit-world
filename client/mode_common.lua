@@ -57,6 +57,10 @@ end
 -- Mouse
 --
 
+function mode_common.getCursorName()
+    return 'normal'
+end
+
 function mode_common.wheelmoved(x, y)
     if y > 0 then
         camera.zoomIn()

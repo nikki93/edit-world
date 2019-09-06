@@ -12,17 +12,7 @@ local share = client.share
 local home = client.home
 
 
-local prevDPIScale = love.graphics.getDPIScale()
-
 function client.update(dt)
-    local currDPIScale = love.graphics.getDPIScale()
-    if prevDPIScale ~= currDPIScale then
-        network.async(function()
-            hud.reloadFonts()
-        end)
-        prevDPIScale = currDPIScale
-    end
-
     if not client.connected then
         return
     end
@@ -38,6 +28,7 @@ function client.update(dt)
     selections.clearDeletedSelections()
 
     mode.update(dt)
+    hud.update(dt)
 
     space.clearWorldSpaceCache()
 end

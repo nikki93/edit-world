@@ -31,5 +31,9 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
     end
 end
 
+function mode_rotate.getCursorName()
+    return 'rotate_se'
+end
+
 
 return mode_rotate

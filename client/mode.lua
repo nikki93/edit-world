@@ -4,6 +4,10 @@ local mode_common = require 'client.mode_common'
 local mode = {}
 
 
+--
+-- Common
+--
+
 mode.modes = {}
 
 mode.modes.select = require 'client.mode_select'
@@ -24,11 +28,11 @@ local currentMode = 'select'
 local function fireEvent(eventName, ...)
     local func = mode.modes[currentMode][eventName]
     if func then
-        func(...)
+        return func(...)
     else
         func = mode_common[eventName]
         if func then
-            func(...)
+            return func(...)
         end
     end
 end
@@ -45,10 +49,18 @@ function mode.getMode()
 end
 
 
+--
+-- Update
+--
+
 function mode.update(dt)
     fireEvent('update', dt)
 end
 
+
+--
+-- Draw
+--
 
 function mode.drawWorldSpace()
     fireEvent('drawWorldSpace')
@@ -58,6 +70,10 @@ function mode.drawScreenSpace()
     fireEvent('drawScreenSpace')
 end
 
+
+--
+-- Keyboard
+--
 
 function mode.keypressed(key, scancode, isRepeat)
     local number = tonumber(key)
@@ -73,6 +89,14 @@ function mode.keyreleased(key, scancode)
     fireEvent('keyreleased', key, scancode)
 end
 
+
+--
+-- Mouse
+--
+
+function mode.getCursorName()
+    return fireEvent('getCursorName')
+end
 
 function mode.mousepressed(x, y, button, isTouch, presses)
     fireEvent('mousepressed', x, y, button, isTouch, presses)
@@ -90,6 +114,10 @@ function mode.wheelmoved(x, y)
     fireEvent('wheelmoved', x, y)
 end
 
+
+--
+-- UI
+--
 
 function mode.uiupdate()
     fireEvent('uiupdate')

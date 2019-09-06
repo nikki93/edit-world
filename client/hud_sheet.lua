@@ -1,7 +1,8 @@
 local hud_sheet = {}
 
 
-hud_sheet.image = love.graphics.newImage('https://raw.githubusercontent.com/KashouC/darktheme/8b9cbf21a74a0472fcd31801fe057eaa5229de48/sheet.png')
+hud_sheet.imageData = love.image.newImageData('https://raw.githubusercontent.com/KashouC/darktheme/8b9cbf21a74a0472fcd31801fe057eaa5229de48/sheet.png')
+hud_sheet.image = love.graphics.newImage(hud_sheet.imageData)
 hud_sheet.image:setFilter('nearest', 'nearest')
 
 hud_sheet.slices = {
@@ -294,10 +295,21 @@ hud_sheet.slices = {
 }
 
 do
+    local CURSOR_SCALE = 1
+
     local W, H = hud_sheet.image:getDimensions()
     for sliceName, slice in pairs(hud_sheet.slices) do
         slice.quads = {}
-        if slice.w then -- Single quad
+        if slice.focusx then -- Cursor
+            local imageData = love.image.newImageData(CURSOR_SCALE * slice.w, CURSOR_SCALE * slice.h)
+            for i = 0, CURSOR_SCALE * slice.w - 1 do
+                for j = 0, CURSOR_SCALE * slice.h - 1 do
+                    local sourceI, sourceJ = slice.x + math.floor(i / CURSOR_SCALE), slice.y + math.floor(j / CURSOR_SCALE)
+                    imageData:setPixel(i, j, hud_sheet.imageData:getPixel(sourceI, sourceJ))
+                end
+            end
+            slice.cursor = love.mouse.newCursor(imageData, slice.focusx, slice.focusy)
+        elseif slice.w then -- Single quad
             slice.quads.single = love.graphics.newQuad(slice.x, slice.y, slice.w, slice.h, W, H)
         elseif slice.w1 then -- 3x3 quads
             local x, y, w1, w2, w3, h1, h2, h3 = slice.x, slice.y, slice.w1, slice.w2, slice.w3, slice.h1, slice.h2, slice.h3

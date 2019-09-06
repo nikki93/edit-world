@@ -30,5 +30,9 @@ function mode_resize.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
     end
 end
 
+function mode_resize.getCursorName()
+    return 'size_se'
+end
+
 
 return mode_resize

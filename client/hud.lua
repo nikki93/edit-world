@@ -24,6 +24,28 @@ hud.reloadFonts()
 
 
 --
+-- Cursor
+--
+
+local currCursorName
+
+local function setCursor(cursorName)
+    local cursor = assert(hud_sheet.slices['cursor_' .. cursorName].cursor, "internal error: cursor not found")
+    love.mouse.setCursor(cursor)
+    currCursorName = cursorName
+end
+
+local function updateCursor()
+    local cursorName = mode.getCursorName()
+    if cursorName ~= currCursorName then
+        setCursor(cursorName)
+    end
+end
+
+setCursor('normal')
+
+
+--
 -- Slice drawing
 --
 
@@ -146,6 +168,25 @@ end
 
 function hud.draw()
     drawModeButtons()
+end
+
+
+--
+-- Update
+--
+
+local prevDPIScale = love.graphics.getDPIScale()
+
+function hud.update(dt)
+    local currDPIScale = love.graphics.getDPIScale()
+    if prevDPIScale ~= currDPIScale then
+        network.async(function()
+            hud.reloadFonts()
+        end)
+        prevDPIScale = currDPIScale
+    end
+
+    updateCursor()
 end
 
 
