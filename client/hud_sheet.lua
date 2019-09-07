@@ -21,7 +21,7 @@ hud_sheet.buttonForegroundColors = buttonForegroundColors[THEME_NAME]
 
 
 local sheetUrls = {
-    light = 'https://raw.githubusercontent.com/aseprite/aseprite/master/data/extensions/aseprite-theme/sheet.png',
+    light = 'https://raw.githubusercontent.com/aseprite/aseprite/5eb31198775a16700338c054b954a6cd02fea8c8/data/extensions/aseprite-theme/sheet.png',
     dark = 'https://raw.githubusercontent.com/KashouC/darktheme/8b9cbf21a74a0472fcd31801fe057eaa5229de48/sheet.png',
 }
 hud_sheet.imageData = love.image.newImageData(sheetUrls[THEME_NAME])
