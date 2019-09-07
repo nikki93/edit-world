@@ -44,7 +44,7 @@ function mode_move.mousereleased(x, y, button, isTouch, presses)
 end
 
 function mode_move.getCursorName()
-    return 'move'
+    return 'scroll'
 end
 
 

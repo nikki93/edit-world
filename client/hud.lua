@@ -133,17 +133,21 @@ local function drawModeButtons()
             -- Background
             draw3x3Slice(sliceName, b.x, b.y, b.w, b.h)
 
-            -- Mode text
-            love.graphics.printf(b.modeName, b.x + 2, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
-
-            -- Hotkey text
             graphics_utils.safePushPop('all', function()
-                local slice = hud_sheet.slices[sliceName]
-                love.graphics.translate(b.x + MODE_BUTTON_WIDTH, b.y + MODE_BUTTON_HEIGHT)
-                love.graphics.scale(0.5, 0.5)
-                local hotkeyText = tostring(i)
-                love.graphics.translate(-font:getWidth(hotkeyText) - slice.w3, -font:getHeight() - slice.h3 - 4)
-                love.graphics.print(hotkeyText)
+                love.graphics.setColor(hud_sheet.buttonForegroundColors[sliceName])
+
+                -- Mode text
+                love.graphics.printf(b.modeName, b.x + 2, b.y + MODE_BUTTON_PADDING, MODE_BUTTON_WIDTH, 'center')
+
+                -- Hotkey text
+                graphics_utils.safePushPop('all', function()
+                    local slice = hud_sheet.slices[sliceName]
+                    love.graphics.translate(b.x + MODE_BUTTON_WIDTH, b.y + MODE_BUTTON_HEIGHT)
+                    love.graphics.scale(0.5, 0.5)
+                    local hotkeyText = tostring(i)
+                    love.graphics.translate(-font:getWidth(hotkeyText) - slice.w3, -font:getHeight() - slice.h3 - 4)
+                    love.graphics.print(hotkeyText)
+                end)
             end)
         end
     end)

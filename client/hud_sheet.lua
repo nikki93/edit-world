@@ -1,7 +1,30 @@
 local hud_sheet = {}
 
 
-hud_sheet.imageData = love.image.newImageData('https://raw.githubusercontent.com/KashouC/darktheme/8b9cbf21a74a0472fcd31801fe057eaa5229de48/sheet.png')
+local THEME_NAME = 'light'
+-- local THEME_NAME = 'dark'
+
+
+local buttonForegroundColors = {
+    light = {
+        button_normal = { 0, 0, 0, 1 },
+        button_hot = { 0, 0, 0, 1 },
+        button_selected = { 1, 1, 1, 1 },
+    },
+    dark = {
+        button_normal = { 1, 1, 1, 1 },
+        button_hot = { 1, 1, 1, 1 },
+        button_selected = { 1, 1, 1, 1 },
+    }
+}
+hud_sheet.buttonForegroundColors = buttonForegroundColors[THEME_NAME]
+
+
+local sheetUrls = {
+    light = 'https://raw.githubusercontent.com/aseprite/aseprite/master/data/extensions/aseprite-theme/sheet.png',
+    dark = 'https://raw.githubusercontent.com/KashouC/darktheme/8b9cbf21a74a0472fcd31801fe057eaa5229de48/sheet.png',
+}
+hud_sheet.imageData = love.image.newImageData(sheetUrls[THEME_NAME])
 hud_sheet.image = love.graphics.newImage(hud_sheet.imageData)
 hud_sheet.image:setFilter('nearest', 'nearest')
 

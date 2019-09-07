@@ -93,6 +93,10 @@ function mode_select.mousepressed(x, y, button)
     end
 end
 
+function mode_select.getCursorName()
+    return 'normal'
+end
+
 
 --
 -- UI
