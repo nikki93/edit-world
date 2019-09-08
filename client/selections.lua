@@ -19,6 +19,17 @@ function selections.isAnySelected(selectionType, ...)
     return next(selections[selectionType]) ~= nil or selections.isAnySelected(...)
 end
 
+function selections.numSelections(...)
+    local n = 0
+    local nArgs = select('#', ...)
+    for i = 1, nArgs do
+        for id in pairs(selections[select(i, ...)]) do
+            n = n + 1
+        end
+    end
+    return n
+end
+
 function selections.isSelected(id, selectionType, ...)
     if selectionType == nil then
         return false

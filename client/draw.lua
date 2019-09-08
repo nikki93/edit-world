@@ -7,6 +7,7 @@ local node_types = require 'common.node_types'
 local player = require 'client.player'
 local mode = require 'client.mode'
 local hud = require 'client.hud'
+local debug_draw = require 'client.debug_draw'
 
 
 local share = client.share
@@ -88,6 +89,11 @@ function client.draw()
                 end
                 player.draw(p)
             end
+        end)
+
+        -- Debug (world-space)
+        graphics_utils.safePushPop('all', function()
+            debug_draw.flushWorldSpace()
         end)
     end)
 

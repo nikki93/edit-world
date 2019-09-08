@@ -1,4 +1,5 @@
 debug_utils = require 'common.debug_utils'
+debug_draw = require 'client.debug_draw'
 
 require 'client.init' -- Must be called first!
 
