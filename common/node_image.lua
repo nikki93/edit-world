@@ -68,17 +68,14 @@ if not CASTLE_SERVER then
         end
         local quadX, quadY, quadWidth, quadHeight = theQuad:getViewport()
 
-        -- Scale
-        local scale = math.min(node.width / quadWidth, node.height / quadHeight)
-
         -- Color
-        local c = node.image.color
-        love.graphics.setColor(c.r, c.g, c.b, c.a)
+        local color = node.image.color
+        love.graphics.setColor(color.r, color.g, color.b, color.a)
 
         -- Transform
         theTransform:reset()
         theTransform:apply(transform)
-        theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(scale)
+        theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(node.width / quadWidth, node.height / quadHeight)
         love.graphics.draw(image, theQuad, theTransform)
     end
 else
