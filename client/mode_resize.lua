@@ -9,6 +9,7 @@ local mode_resize = {}
 local nSelected
 local worldPivotX, worldPivotY = 0, 0
 
+
 --
 -- Update
 --
