@@ -78,14 +78,12 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
 end
 
 function mode_rotate.getCursorName()
+    -- Pick cursor orientation based on the quadrant it is in relative to the pivot
     if nSelected == 0 then
         return 'rotate_se'
     end
-    local screenMouseX, screenMouseY = love.mouse.getPosition()
-    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
-    local pivotMouseX, pivotMouseY = worldMouseX - worldPivotX, worldMouseY - worldPivotY
-    local northSouth, westEast = pivotMouseY > 0 and 's' or 'n', pivotMouseX > 0 and 'e' or 'w'
-    return 'rotate_' .. northSouth .. westEast
+    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(love.mouse.getPosition())
+    return 'rotate_' .. (worldMouseY > worldPivotY and 's' or 'n') .. (worldMouseX > worldPivotX and 'e' or 'w')
 end
 
 
