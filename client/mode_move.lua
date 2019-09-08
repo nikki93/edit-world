@@ -81,11 +81,13 @@ end
 
 function mode_move.uiupdate()
     snapToGrid = ui.checkbox('snap to grid', snapToGrid)
-    ui_utils.row('grid-size', function()
-        gridSizeX = ui.numberInput('grid size x', gridSizeX)
-    end, function()
-        gridSizeY = ui.numberInput('grid size y', gridSizeY)
-    end)
+        if snapToGrid then
+        ui_utils.row('grid-size', function()
+            gridSizeX = ui.numberInput('grid size x', gridSizeX)
+        end, function()
+            gridSizeY = ui.numberInput('grid size y', gridSizeY)
+        end)
+    end
 
     moveAlong = ui.dropdown('move along axes', moveAlong, { 'both x and y', 'x only', 'y only' })
 end
