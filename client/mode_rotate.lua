@@ -17,7 +17,6 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
         local prevWorldMouseX, prevWorldMouseY = camera.getTransform():inverseTransformPoint(prevScreenMouseX, prevScreenMouseY)
 
         local nSelected = selections.numSelections('primary')
-
         if nSelected == 1 then -- Rotate single node around its own origin
             selections.forEach('primary', function(id, node)
                 local transform = space.getWorldSpace(node).transform
@@ -50,6 +49,12 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
             selections.forEach('primary', function(id, node)
                 -- Update rotation
                 node.rotation = node.rotation + dAngle
+                while node.rotation > math.pi do
+                    node.rotation = node.rotation - 2 * math.pi
+                end
+                while node.rotation < -math.pi do
+                    node.rotation = node.rotation + 2 * math.pi
+                end
 
                 -- Update position by rotating pivot->node delta vector in parent-space
                 local parentWorldTransform = space.getParentWorldSpace(node).transform
