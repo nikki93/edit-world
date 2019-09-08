@@ -6,6 +6,25 @@ local camera = require 'client.camera'
 local mode_rotate = {}
 
 
+local nSelected
+local worldPivotX, worldPivotY = 0, 0
+
+--
+-- Update
+--
+
+function mode_rotate.update(dt)
+    nSelected = selections.numSelections('primary')
+
+    worldPivotX, worldPivotY = 0, 0
+    selections.forEach('primary', function(id, node)
+        local worldX, worldY = space.getWorldSpace(node).transform:transformPoint(0, 0)
+        worldPivotX, worldPivotY = worldPivotX + worldX, worldPivotY + worldY
+    end)
+    worldPivotX, worldPivotY = worldPivotX / nSelected, worldPivotY / nSelected
+end
+
+
 --
 -- Mouse
 --
@@ -16,7 +35,6 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
         local prevScreenMouseX, prevScreenMouseY = screenMouseX - screenMouseDX, screenMouseY - screenMouseDY
         local prevWorldMouseX, prevWorldMouseY = camera.getTransform():inverseTransformPoint(prevScreenMouseX, prevScreenMouseY)
 
-        local nSelected = selections.numSelections('primary')
         if nSelected == 1 then -- Rotate single node around its own origin
             selections.forEach('primary', function(id, node)
                 local transform = space.getWorldSpace(node).transform
@@ -30,15 +48,7 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
                     node.rotation = node.rotation + 2 * math.pi
                 end
             end)
-        elseif nSelected > 1 then -- Rotate multiple nodes around the centroid of their origins (the 'pivot')
-            -- Compute pivot
-            local worldPivotX, worldPivotY = 0, 0
-            selections.forEach('primary', function(id, node)
-                local worldX, worldY = space.getWorldSpace(node).transform:transformPoint(0, 0)
-                worldPivotX, worldPivotY = worldPivotX + worldX, worldPivotY + worldY
-            end)
-            worldPivotX, worldPivotY = worldPivotX / nSelected, worldPivotY / nSelected
-
+        elseif nSelected > 1 then -- Rotate multiple nodes around pivot
             -- Compute delta angle
             local prevPivotMouseX, prevPivotMouseY = prevWorldMouseX - worldPivotX, prevWorldMouseY - worldPivotY
             local pivotMouseX, pivotMouseY = worldMouseX - worldPivotX, worldMouseY - worldPivotY
@@ -68,7 +78,14 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
 end
 
 function mode_rotate.getCursorName()
-    return 'rotate_se'
+    if nSelected == 0 then
+        return 'rotate_se'
+    end
+    local screenMouseX, screenMouseY = love.mouse.getPosition()
+    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
+    local pivotMouseX, pivotMouseY = worldMouseX - worldPivotX, worldMouseY - worldPivotY
+    local northSouth, westEast = pivotMouseY > 0 and 's' or 'n', pivotMouseX > 0 and 'e' or 'w'
+    return 'rotate_' .. northSouth .. westEast
 end
 
 
