@@ -3,6 +3,9 @@ local ui = castle.ui
 local mode = require 'client.mode'
 
 
+local modeSectionOpen = true
+
+
 function client.uiupdate()
     if not client.connected then
         ui.markdown('connecting...')
@@ -11,7 +14,11 @@ function client.uiupdate()
 
     ui.tabs('main', function()
         ui.tab('nodes', function()
-            mode.uiupdate()
+            modeSectionOpen = ui.section(mode.getMode(), {
+                open = modeSectionOpen,
+            }, function()
+                mode.uiupdate()
+            end)
         end)
         ui.tab('world', function()
         end)
