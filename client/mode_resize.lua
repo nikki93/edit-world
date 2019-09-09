@@ -1,6 +1,7 @@
 local selections = require 'client.selections'
 local space = require 'client.space'
 local camera = require 'client.camera'
+local ui = castle.ui
 
 
 local mode_resize = {}
@@ -8,6 +9,8 @@ local mode_resize = {}
 
 local nSelections
 local worldPivotX, worldPivotY = 0, 0
+
+local resizeAlong = 'both width and height'
 
 
 --
@@ -45,8 +48,12 @@ function mode_resize.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
             local mouseLX, mouseLY = transform:inverseTransformPoint(worldMouseX, worldMouseY)
             local prevDLX, prevDLY = prevMouseLX - pivotLX, prevMouseLY - pivotLY
             local dLX, dLY = mouseLX - pivotLX, mouseLY - pivotLY
-            node.width = node.width * dLX / prevDLX
-            node.height = node.height * dLY / prevDLY
+            if resizeAlong ~= 'height only' then
+                node.width = node.width * dLX / prevDLX
+            end
+            if resizeAlong ~= 'width only' then
+                node.height = node.height * dLY / prevDLY
+            end
 
             if nSelections > 1 then
                 -- Update position by checking scaling of mouse position around pivot in parent space
@@ -71,6 +78,15 @@ function mode_resize.getCursorName()
     end
     local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(love.mouse.getPosition())
     return 'size_' .. (worldMouseY > worldPivotY and 's' or 'n') .. (worldMouseX > worldPivotX and 'e' or 'w')
+end
+
+
+--
+-- UI
+--
+
+function mode_resize.uiupdate()
+    resizeAlong = ui.dropdown('resize along axes', resizeAlong, { 'both width and height', 'width only', 'height only' })
 end
 
 
