@@ -10,6 +10,7 @@ local mode_resize = {}
 local nSelections
 local worldPivotX, worldPivotY = 0, 0
 
+local maintainAspect = true
 local resizeAlong = 'both width and height'
 
 
@@ -48,11 +49,31 @@ function mode_resize.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
             local mouseLX, mouseLY = transform:inverseTransformPoint(worldMouseX, worldMouseY)
             local prevDLX, prevDLY = prevMouseLX - pivotLX, prevMouseLY - pivotLY
             local dLX, dLY = mouseLX - pivotLX, mouseLY - pivotLY
-            if resizeAlong ~= 'height only' then
-                node.width = node.width * dLX / prevDLX
+            local scaleX, scaleY = 1, 1
+            if math.abs(prevMouseLX) >= 0.5 and math.abs(mouseLX) >= 0.5 then
+                scaleX = dLX / prevDLX
             end
-            if resizeAlong ~= 'width only' then
-                node.height = node.height * dLY / prevDLY
+            if math.abs(prevMouseLY) >= 0.5 and math.abs(mouseLY) >= 0.5 then
+                scaleY = dLY / prevDLY
+            end
+            if scaleX < 0 then
+                scaleX = 1
+            end
+            if scaleY < 0 then
+                scaleY = 1
+            end
+            if maintainAspect then
+                if math.abs(mouseLX - prevMouseLX) > math.abs(mouseLY - prevMouseLY) then
+                    scaleY = scaleX
+                else
+                    scaleX = scaleY
+                end
+            end
+            if maintainAspect or resizeAlong ~= 'height only' then
+                node.width = node.width * scaleX
+            end
+            if maintainAspect or resizeAlong ~= 'width only' then
+                node.height = node.height * scaleY
             end
         end)
     end
@@ -73,7 +94,10 @@ end
 --
 
 function mode_resize.uiupdate()
-    resizeAlong = ui.dropdown('resize along axes', resizeAlong, { 'both width and height', 'width only', 'height only' })
+    maintainAspect = ui.checkbox('maintain aspect ratio', maintainAspect)
+    if not maintainAspect then
+        resizeAlong = ui.dropdown('resize along dimensions', resizeAlong, { 'both width and height', 'width only', 'height only' })
+    end
 end
 
 

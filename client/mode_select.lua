@@ -49,6 +49,9 @@ function mode_select.keypressed(key)
     if key == 'c' then
         mode_select.cloneNodes()
     end
+    if key == 'backspace' or key == 'delete' then
+        mode_select.deleteNodes()
+    end
 end
 
 

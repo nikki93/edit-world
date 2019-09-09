@@ -8,7 +8,7 @@ local ui_utils = require 'common.ui_utils'
 local mode_move = {}
 
 
-local snapToGrid = true
+local snapToGrid = false
 local gridSizeX, gridSizeY = 1, 1
 local moveAlong = 'both x and y'
 

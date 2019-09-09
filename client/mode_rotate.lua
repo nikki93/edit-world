@@ -10,7 +10,7 @@ local mode_rotate = {}
 local nSelections
 local worldPivotX, worldPivotY = 0, 0
 
-local snapToIncrement = true
+local snapToIncrement = false
 local incrementDegrees = 45
 
 
