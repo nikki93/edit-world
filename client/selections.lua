@@ -74,7 +74,9 @@ function selections.forEach(...)
         for id in pairs(table_utils.clone(selections[selectionType])) do
             local node = locals.nodeManager:getById(id)
             if node then
-                func(id, node)
+                if func(id, node) == false then
+                    return
+                end
             end
         end
     end

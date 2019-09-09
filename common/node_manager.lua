@@ -116,6 +116,21 @@ end
 
 
 --
+-- Type
+--
+
+function NodeManager:changeType(idOrNode, newType)
+    local node = self:resolveIdOrNode(idOrNode)
+    if node.type == newType then
+        return
+    end
+    node[node.type] = nil
+    node.type = newType
+    node[node.type] = table_utils.clone(node_types[newNodeData.type].DEFAULTS)
+end
+
+
+--
 -- Lookup
 --
 
@@ -289,6 +304,17 @@ function NodeManager:trackDiff(id, diff, rootExact)
             self:trackTags(id, diff.parentId, diff.tags)
         end
     end
+end
+
+
+--
+-- Parent / child
+--
+
+function NodeManager:hasChildren(idOrNode)
+    local id = type(idOrNode) == 'string' and idOrNode or idOrNode.id
+    local childIndex = self.parentChildIndex[id]
+    return childIndex and next(childIndex) ~= nil
 end
 
 
