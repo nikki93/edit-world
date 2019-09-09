@@ -54,19 +54,6 @@ function mode_resize.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
             if resizeAlong ~= 'width only' then
                 node.height = node.height * dLY / prevDLY
             end
-
-            if nSelections > 1 then
-                -- Update position by checking scaling of mouse position around pivot in parent space
-                -- TODO(nikki): This isn't really working...
-                -- local transform = space.getParentWorldSpace(node).transform
-                -- local pivotLX, pivotLY = transform:inverseTransformPoint(worldPivotX, worldPivotY)
-                -- local prevMouseLX, prevMouseLY = transform:inverseTransformPoint(prevWorldMouseX, prevWorldMouseY)
-                -- local mouseLX, mouseLY = transform:inverseTransformPoint(worldMouseX, worldMouseY)
-                -- local prevDLX, prevDLY = prevMouseLX - pivotLX, prevMouseLY - pivotLY
-                -- local dLX, dLY = mouseLX - pivotLX, mouseLY - pivotLY
-                -- node.x = pivotLX + (node.x - pivotLX) * dLX / prevDLX
-                -- node.y = pivotLY + (node.y - pivotLY) * dLY / prevDLY
-            end
         end)
     end
 end
