@@ -87,14 +87,13 @@ end
 function NodeManager:actuallyDelete(node)
     local id = node.id
 
-    -- Untrack parent
-    local parentId = node.parentId
-    if parentId then
-        for tag in pairs(node.tags) do
-            self:untrackTag(id, parentId, tag)
-        end
-        self:untrackParent(id, parentId)
-    end
+    -- Detach children
+    self:forEachChild(node, function(childId, child)
+        self:setParent(child, nil)
+    end)
+
+    -- Detach parent
+    self:setParent(node, nil)
 
     -- Remove from tables
     self.proxies[id] = nil
@@ -135,9 +134,6 @@ end
 --
 
 function NodeManager:getById(id)
-    if id == nil then
-        return nil
-    end
     if self.isServer then
         return self.shared[id]
     else
@@ -156,16 +152,22 @@ end
 function NodeManager:forEach(func)
     if self.isServer then
         for id, node in pairs(self.shared) do
-            func(id, node)
+            if func(id, node) == false then
+                return
+            end
         end
     else
         for id, node in pairs(self.shared) do
             if not self.controlled[id] then
-                func(id, node)
+                if func(id, node) == false then
+                    return
+                end
             end
         end
         for id, node in pairs(self.controlled) do
-            func(id, node)
+            if func(id, node) == false then
+                return
+            end
         end
     end
 end
@@ -311,10 +313,73 @@ end
 -- Parent / child
 --
 
+function NodeManager:setParent(node, newParentId)
+    local oldParentId = node.parentId
+    if oldParentId ~= newParentId then
+        local id = node.id
+
+        -- Untrack old parent
+        if oldParentId then
+            for tag in pairs(node.tags) do
+                self:untrackTag(id, oldParentId, tag)
+            end
+            self:untrackParent(id, oldParentId)
+            node.parentId = nil
+        end
+
+        -- Track new parent
+        if newParentId then
+            self:trackParent(id, newParentId)
+            for tag in pairs(node.tags) do
+                self:trackTag(id, newParentId, tag)
+            end
+            node.parentId = newParentId
+        end
+    end
+end
+
 function NodeManager:hasChildren(idOrNode)
     local id = type(idOrNode) == 'string' and idOrNode or idOrNode.id
     local childIndex = self.parentChildIndex[id]
     return childIndex and next(childIndex) ~= nil
+end
+
+function NodeManager:forEachChild(idOrNode, func)
+    local id = type(idOrNode) == 'string' and idOrNode or idOrNode.id
+    local childIndex = self.parentChildIndex[id]
+    if childIndex then
+        for id in pairs(childIndex) do
+            if func(id, self:getById(id)) == false then
+                return
+            end
+        end
+    end
+end
+
+function NodeManager:getChildWithId(idOrNode, childId)
+    local id = type(idOrNode) == 'string' and idOrNode or idOrNode.id
+    local childIndex = self.parentChildIndex[id]
+    if childIndex then
+        if childIndex[childId] then
+            return self:getById(childId)
+        end
+    end
+    return nil
+end
+
+function NodeManager:forEachChildWithTag(idOrNode, tag, func)
+    local id = type(idOrNode) == 'string' and idOrNode or idOrNode.id
+    local tagChildIndex = self.parentTagChildIndex[id]
+    if tagChildIndex then
+        local childIndex = tagChildIndex[tag]
+        if childIndex then
+            for id in pairs(childIndex) do
+                if func(id, self:getById(id)) == false then
+                    return
+                end
+            end
+        end
+    end
 end
 
 
@@ -322,8 +387,27 @@ end
 -- Tags
 --
 
-function NodeManager:setTags(idOrNode, newTags)
-    local node = self:resolveIdOrNode(idOrNode)
+function NodeManager:addTag(node, tag)
+    local parentId = node.parentId
+    if parentId then
+        if not node.tags[tag] then
+            self:trackTag(node.id, node.parentId, tag)
+            node.tags[tag] = true
+        end
+    end
+end
+
+function NodeManager:removeTag(node, tag)
+    local parentId = node.parentId
+    if parentId then
+        if node.tags[tag] then
+            self:untrackTag(node.id, node.parentId, tag)
+            node.tags[tag] = nil
+        end
+    end
+end
+
+function NodeManager:setTags(node, newTags)
     local id, parentId = node.id, node.parentId
     for tag in pairs(node.tags) do -- Removed tags
         if not newTags[tag] then
