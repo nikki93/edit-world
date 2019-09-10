@@ -319,6 +319,28 @@ end
 
 
 --
+-- Tags
+--
+
+function NodeManager:setTags(idOrNode, newTags)
+    local node = self:resolveIdOrNode(idOrNode)
+    local id, parentId = node.id, node.parentId
+    for tag in pairs(node.tags) do -- Removed tags
+        if not newTags[tag] then
+            self:untrackTag(id, parentId, tag)
+            node.tags[tag] = nil
+        end
+    end
+    for tag in pairs(newTags) do -- Added tags
+        if not node.tags[tag] then
+            self:trackTag(id, parentId, tag)
+            node.tags[tag] = true
+        end
+    end
+end
+
+
+--
 -- Locking / controlling
 --
 

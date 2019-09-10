@@ -65,6 +65,44 @@ function node_base.proxyMethods:ui(props)
             end),
         })
 
+        -- Tags
+        ui.box('tags-row', { flexDirection = 'row', alignItems = 'stretch' }, function()
+            ui.box('tags-input', { flex = 1 }, function()
+                ui.textInput('tags', node.tagsText, {
+                    invalid = node.tagsText:match('^[%w ]*$') == nil,
+                    invalidText = 'tags must be separated by spaces, and can only contain letters or digits',
+                    onChange = props.validateChange(function(newTagsText)
+                        node.tagsText = newTagsText
+                    end),
+                })
+            end)
+
+            if node.tagsText:match('^[%w ]*$') then
+                local tagsChanged = false
+                local newTags = {}
+                for tag in node.tagsText:gmatch('%S+') do
+                    if not node.tags[tag] then -- Tag added?
+                        tagsChanged = true
+                    end
+                    newTags[tag] = true
+                end
+                if not tagsChanged then
+                    for tag in pairs(node.tags) do
+                        if not newTags[tag] then -- Tag removed?
+                            tagsChanged = true
+                        end
+                    end
+                end
+                if tagsChanged then
+                    ui.box('tags-button', { flexDirection = 'row', marginLeft = 20, alignItems = 'flex-end' }, function()
+                        if ui.button('apply') then
+                            nodeManager:setTags(node, newTags)
+                        end
+                    end)
+                end
+            end
+        end)
+
         -- Position
         ui_utils.row('position', function()
             ui.numberInput('x', node.x, {
