@@ -1,5 +1,5 @@
 local table_utils = require 'common.table_utils'
-local node_image = require 'common.node_image'
+local resource_loader = require 'common.resource_loader'
 
 
 local player = {}
@@ -16,8 +16,14 @@ function player.init(p)
     return p
 end
 
+local imageHolders = {}
+
 function player.draw(p)
-    local image = node_image.imageFromUrl((p.me and p.me.photoUrl) or '')
+    local imageUrl = (p.me and p.me.photoUrl) or ''
+    local imageHolder = resource_loader.loadImage(imageUrl)
+    imageHolders[imageUrl] = imageHolder
+    local image = imageHolder.image
+
     local scaleX, scaleY = 1 / image:getWidth(), 1 / image:getHeight()
     love.graphics.draw(image, p.x - 0.5, p.y - 0.5, 0, scaleX, scaleY)
 end
