@@ -14,67 +14,40 @@ local mode_common = {}
 --
 
 function mode_common.drawBoundingBox(node)
-    love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
+    graphics_utils.safePushPop(function()
+        love.graphics.applyTransform(space.getWorldSpace(node).transform)
+        love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
+    end)
 end
 
-function mode_common.drawForEachNode(nodeIds, func)
-    graphics_utils.safePushPop('all', function()
-        love.graphics.setLineWidth(1.5 / math_utils.getScaleFromTransform(camera.getTransform()))
-        for id in pairs(nodeIds) do
-            local node = locals.nodeManager:getById(id)
-            if node then
-                graphics_utils.safePushPop('all', function()
-                    love.graphics.applyTransform(space.getWorldSpace(node).transform)
-                    func(id, node)
-                end)
-            end
+function mode_common.drawNodeOverlays(nodesInDepthOrder)
+    local dpiScale = love.graphics.getDPIScale()
+
+    local selecteds = {}
+
+    love.graphics.setLineWidth(1 / math_utils.getScaleFromTransform(camera.getTransform()) / dpiScale)
+    love.graphics.setColor(0.8, 0.8, 0.8)
+    for _, node in ipairs(nodesInDepthOrder) do
+        if selections.primary[node.id] or selections.conflicting[node.id] or selections.secondary[node.id] then
+            table.insert(selecteds, node)
+        else
+            mode_common.drawBoundingBox(node)
         end
-    end)
-end
+    end
 
-function mode_common.drawSelections()
-    love.graphics.setColor(0, 1, 0)
-    mode_common.drawForEachNode(selections.primary, function(id, node)
-        mode_common.drawBoundingBox(node)
-    end)
-
-    love.graphics.setColor(1, 0, 0)
-    mode_common.drawForEachNode(selections.conflicting, function(id, node)
-        mode_common.drawBoundingBox(node)
-    end)
-
-    love.graphics.setColor(0.5, 0, 1)
-    mode_common.drawForEachNode(selections.secondary, function(id, node)
-        mode_common.drawBoundingBox(node)
-    end)
-end
-
-function mode_common.drawInvisibles()
-    local invisibles = {
-        group = {},
-        sound = {},
-    }
-
-    locals.nodeManager:forEach(function(id, node)
-        if invisibles[node.type] then
-            invisibles[node.type][id] = true
+    love.graphics.setLineWidth(3 / math_utils.getScaleFromTransform(camera.getTransform()) / dpiScale)
+    for _, node in ipairs(selecteds) do
+        local r, g, b
+        if selections.primary[node.id] then
+            r, g, b = 0, 1, 0
+        elseif selections.conflicting[node.id] then
+            r, g, b = 1, 0, 0
+        elseif selections.secondary[node.id] then
+            r, g, b = 0.5, 0, 1
         end
-    end)
-
-    love.graphics.setColor(0.8, 0.5, 0.1)
-    mode_common.drawForEachNode(invisibles.group, function(id, node)
+        love.graphics.setColor(r, g, b)
         mode_common.drawBoundingBox(node)
-    end)
-
-    love.graphics.setColor(1, 0, 1)
-    mode_common.drawForEachNode(invisibles.sound, function(id, node)
-        mode_common.drawBoundingBox(node)
-    end)
-end
-
-function mode_common.drawWorldSpace()
-    mode_common.drawInvisibles()
-    mode_common.drawSelections()
+    end
 end
 
 

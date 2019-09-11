@@ -64,21 +64,23 @@ function client.draw()
     graphics_utils.safePushPop('all', function()
         love.graphics.applyTransform(camera.getTransform())
 
+        -- Collect nodes in depth order
+        local nodesInDepthOrder = {}
+        locals.nodeManager:forEach(function(id, node)
+            table.insert(nodesInDepthOrder, node)
+        end)
+        table.sort(nodesInDepthOrder, space.compareDepth)
+
         -- Nodes
         graphics_utils.safePushPop('all', function()
-            local order = {}
-            locals.nodeManager:forEach(function(id, node)
-                table.insert(order, node)
-            end)
-            table.sort(order, space.compareDepth)
-            for _, node in ipairs(order) do
+            for _, node in ipairs(nodesInDepthOrder) do
                 locals.nodeManager:getProxy(node):draw(space.getWorldSpace(node).transform)
             end
         end)
 
-        -- Mode (world-space)
+        -- Mode-specific node overlays
         graphics_utils.safePushPop('all', function()
-            mode.drawWorldSpace()
+            mode.drawNodeOverlays(nodesInDepthOrder)
         end)
 
         -- Players
@@ -95,11 +97,6 @@ function client.draw()
         graphics_utils.safePushPop('all', function()
             debug_draw.flushWorldSpace()
         end)
-    end)
-
-    -- Mode (screen-space)
-    graphics_utils.safePushPop('all', function()
-        mode.drawScreenSpace()
     end)
 
     -- HUD

@@ -62,12 +62,8 @@ end
 -- Draw
 --
 
-function mode.drawWorldSpace()
-    fireEvent('drawWorldSpace')
-end
-
-function mode.drawScreenSpace()
-    fireEvent('drawScreenSpace')
+function mode.drawNodeOverlays(...)
+    fireEvent('drawNodeOverlays', ...)
 end
 
 
