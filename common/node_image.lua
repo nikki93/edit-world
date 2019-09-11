@@ -94,14 +94,13 @@ end
 -- UI
 --
 
-local sectionOpen = true
-
-function node_image.proxyMethods:ui(props)
-    node_base.proxyMethods.ui(self, props)
-
+function node_image.proxyMethods:uiType(props)
     local node, nodeManager = self.__node, self.__nodeManager
 
-    local function inside()
+    if type(self.__imageSectionOpen) ~= 'boolean' then
+        self.__imageSectionOpen = true
+    end
+    self.__imageSectionOpen = ui.section('image', { open = self.__imageSectionOpen }, function()
         -- URL
         ui.textInput('url', node.image.url, {
             onChange = props.validateChange(function(newUrl)
@@ -168,13 +167,7 @@ function node_image.proxyMethods:ui(props)
                 end)()
             end
         end
-    end
-
-    if props.surroundSection ~= false then
-        sectionOpen = ui.section('image', { open = sectionOpen }, inside)
-    else
-        inside()
-    end
+    end)
 end
 
 

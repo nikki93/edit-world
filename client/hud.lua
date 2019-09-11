@@ -1,4 +1,4 @@
-local graphics_utils = require 'client.graphics_utils'
+local graphics_utils = require 'common.graphics_utils'
 local mode = require 'client.mode'
 local hud_sheet = require 'client.hud_sheet'
 

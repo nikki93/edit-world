@@ -1,5 +1,5 @@
 local client = require 'client.init'
-local graphics_utils = require 'client.graphics_utils'
+local graphics_utils = require 'common.graphics_utils'
 local camera = require 'client.camera'
 local locals = require 'client.locals'
 local space = require 'client.space'

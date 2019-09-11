@@ -118,14 +118,17 @@ end
 -- Type
 --
 
-function NodeManager:changeType(idOrNode, newType)
+function NodeManager:setType(idOrNode, newType)
     local node = self:resolveIdOrNode(idOrNode)
     if node.type == newType then
         return
     end
+
     node[node.type] = nil
     node.type = newType
-    node[node.type] = table_utils.clone(node_types[newNodeData.type].DEFAULTS)
+    node[node.type] = table_utils.clone(node_types[node.type].DEFAULTS)
+
+    self.proxies[node.id] = nil
 end
 
 
@@ -299,6 +302,10 @@ function NodeManager:trackDiff(id, diff, rootExact)
                     end
                 end
             end
+        end
+
+        if diff.type ~= nil and node.type ~= diff.type then -- Type changed, invalidate proxy
+            self.proxies[id] = nil
         end
     else -- New node
         if diff.parentId then

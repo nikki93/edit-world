@@ -1,8 +1,9 @@
 local selections = require 'client.selections'
 local locals = require 'client.locals'
-local graphics_utils = require 'client.graphics_utils'
+local graphics_utils = require 'common.graphics_utils'
 local space = require 'client.space'
 local camera = require 'client.camera'
+local math_utils = require 'common.math_utils'
 
 
 local mode_common = {}
@@ -18,7 +19,7 @@ end
 
 function mode_common.drawForEachNode(nodeIds, func)
     graphics_utils.safePushPop('all', function()
-        love.graphics.setLineWidth(1.5 / space.getScaleFromTransform(camera.getTransform()))
+        love.graphics.setLineWidth(1.5 / math_utils.getScaleFromTransform(camera.getTransform()))
         for id in pairs(nodeIds) do
             local node = locals.nodeManager:getById(id)
             if node then

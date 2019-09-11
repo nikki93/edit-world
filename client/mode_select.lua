@@ -1,6 +1,6 @@
 local selections = require 'client.selections'
 local locals = require 'client.locals'
-local graphics_utils = require 'client.graphics_utils'
+local graphics_utils = require 'common.graphics_utils'
 local space = require 'client.space'
 local camera = require 'client.camera'
 local ui_utils = require 'common.ui_utils'

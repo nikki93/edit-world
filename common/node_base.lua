@@ -229,12 +229,15 @@ end
 -- UI
 --
 
-local sectionOpen = true
-
 function node_base.proxyMethods:ui(props)
     local node, nodeManager = self.__node, self.__nodeManager
 
-    local function inside()
+    local oldType = node.type
+
+    if type(self.__nodeSectionOpen) ~= 'boolean' then
+        self.__nodeSectionOpen = true
+    end
+    self.__nodeSectionOpen = ui.section('node', { open = self.__nodeSectionOpen }, function()
         -- Type
         ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
             onChange = props.validateChange(function(newType)
@@ -243,7 +246,7 @@ function node_base.proxyMethods:ui(props)
                         print("can't change type of a group that has children -- you must either detach or delete the children first!")
                         return
                     end
-                    nodeManager:changeType(node, newType)
+                    nodeManager:setType(node, newType)
                 end
             end),
         })
@@ -330,12 +333,10 @@ function node_base.proxyMethods:ui(props)
                 end),
             })
         end)
-    end
+    end)
 
-    if props.surroundSection ~= false then
-        sectionOpen = ui.section('node', { open = sectionOpen }, inside)
-    else
-        inside()
+    if node.type == oldType then
+        self:uiType(props)
     end
 end
 
