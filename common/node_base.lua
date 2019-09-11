@@ -10,6 +10,7 @@ node_base.DEFAULTS = {
     tagsText = '',
     tags = {}, -- `tag` -> `true`
     parentId = nil,
+    rules = {},
     x = 0,
     y = 0,
     rotation = 0,

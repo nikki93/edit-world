@@ -7,7 +7,6 @@ local node_group = {}
 
 
 node_group.DEFAULTS = {
-    rules = {},
 }
 
 
