@@ -34,17 +34,9 @@ function node_image.proxyMethods:draw(transform)
     local node = self.__node
 
     -- Image
-    self.__imageHolder = resource_loader.loadImage(node.image.url)
+    local filter = node.image.smoothScaling and 'linear' or 'nearest'
+    self.__imageHolder = resource_loader.loadImage(node.image.url, filter)
     local image = self.__imageHolder.image
-
-    -- Filter
-    local filter = image:getFilter()
-    if node.image.smoothScaling and filter == 'nearest' then
-        image:setFilter('linear', 'linear')
-    end
-    if not node.image.smoothScaling and filter == 'linear' then
-        image:setFilter('nearest', 'nearest')
-    end
 
     -- Crop
     local imageWidth, imageHeight = image:getWidth(), image:getHeight()
@@ -136,7 +128,7 @@ function node_image.proxyMethods:uiType(props)
             end)
             if ui.button('reset crop') then
                 props.validateChange(function()
-                    local image = node_image.imageFromUrl(node.image.url)
+                    local image = resource_loader.loadImage(node.image.url).image
                     if image then
                         node.image.cropX, node.image.cropY = 0, 0
                         node.image.cropWidth, node.image.cropHeight = image:getDimensions()
