@@ -29,7 +29,7 @@ function node_manager.new(opts)
         self.clientId = assert(opts.clientId)
     end
 
-    self.proxies = {}                   -- `node.id` -> rule-facing proxy for that node
+    self.proxies = {}                   -- `node.id` -> local rule-facing proxy for that node
     self.parentChildIndex = {}          -- `parent.id` -> `child.id` -> `true` for all `child.parentId == parent.id`
     self.parentTagChildIndex = {}       -- `parent.id` -> `tag` -> `child.id` -> `true` for all `child.parentId == parent.id and child.tags[tag]`
 
