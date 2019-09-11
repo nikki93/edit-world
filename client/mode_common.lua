@@ -49,7 +49,31 @@ function mode_common.drawSelections()
     end)
 end
 
+function mode_common.drawInvisibles()
+    local invisibles = {
+        group = {},
+        sound = {},
+    }
+
+    locals.nodeManager:forEach(function(id, node)
+        if invisibles[node.type] then
+            invisibles[node.type][id] = true
+        end
+    end)
+
+    love.graphics.setColor(0.8, 0.5, 0.1)
+    mode_common.drawForEachNode(invisibles.group, function(id, node)
+        mode_common.drawBoundingBox(node)
+    end)
+
+    love.graphics.setColor(1, 0, 1)
+    mode_common.drawForEachNode(invisibles.sound, function(id, node)
+        mode_common.drawBoundingBox(node)
+    end)
+end
+
 function mode_common.drawWorldSpace()
+    mode_common.drawInvisibles()
     mode_common.drawSelections()
 end
 
