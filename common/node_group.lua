@@ -4,6 +4,7 @@ local ui = castle.ui
 local code_loader = require 'common.code_loader'
 local table_utils = require 'common.table_utils'
 local lib = require 'common.lib'
+local rule_constants = require 'common.rule_constants'
 
 
 local node_group = {}
@@ -30,28 +31,6 @@ end
 -- Rules
 --
 
-local RULE_EVENTS = {
-    'every frame',
-}
-
-local RULE_ACTIONS = {
-    'run code',
-}
-
-local RULE_DEFAULTS = {
-    enabled = true,
-    event = 'every frame',
-    action = 'run code',
-    description = '',
-}
-
-local RULE_ACTION_DEFAULTS = {
-    ['run code'] = {
-        edited = nil,
-        applied = '',
-    },
-}
-
 local function formatRuleTitle(rule)
     if rule.description == '' then
         return 'on ' .. rule.event .. ', ' .. rule.action
@@ -70,8 +49,8 @@ function node_group.proxyMethods:runRules(event, params)
         if rule.enabled and rule.event == event then
             local code
 
-            if rule.action == 'run code' then
-                code = rule['run code'].applied
+            if rule.action == rule_constants.ACTION_RUN_CODE then
+                code = rule[rule_constants.ACTION_RUN_CODE].applied
             end
 
             local compiledHolder = code_loader.compile(code, formatRuleTitle(rule))
@@ -101,9 +80,9 @@ function node_group.proxyMethods:uiRulesPart(props)
 
     if ui.button('add rule') then
         props.validateChange(function()
-            local newRuleData = table_utils.clone(RULE_DEFAULTS)
+            local newRuleData = table_utils.clone(rule_constants.DEFAULTS)
             newRuleData.id = lib.uuid()
-            newRuleData[newRuleData.action] = RULE_ACTION_DEFAULTS[newRuleData.action]
+            newRuleData[newRuleData.action] = rule_constants.ACTION_DEFAULTS[newRuleData.action]
             rules[#rules + 1] = newRuleData
         end)()
     end
@@ -117,17 +96,17 @@ function node_group.proxyMethods:uiRulesPart(props)
         }, function()
             -- Event, action
             ui_utils.row('event-action', function()
-                ui.dropdown('event', rule.event, RULE_EVENTS, {
+                ui.dropdown('event', rule.event, rule_constants.EVENTS, {
                     onChange = props.validateChange(function(newEvent)
                         rule.event = newEvent
                     end),
                 })
             end, function()
-                ui.dropdown('action', rule.action, RULE_ACTIONS, {
+                ui.dropdown('action', rule.action, rule_constants.ACTIONS, {
                     onChange = props.validateChange(function(newAction)
                         rule[rule.action] = nil
                         rule.action = newAction
-                        rule[rule.action] = RULE_ACTION_DEFAULTS[rule.action]
+                        rule[rule.action] = rule_constants.ACTION_DEFAULTS[rule.action]
                     end),
                 })
             end)
@@ -144,17 +123,17 @@ function node_group.proxyMethods:uiRulesPart(props)
 
                 ui.box('description', { flex = 1 }, function()
                     ui.textInput('description', rule.description, {
-                        maxLength = MAX_RULE_DESCRIPTION_LENGTH,
+                        maxLength = rule_constants.MAX_DESCRIPTION_LENGTH,
                         onChange = props.validateChange(function(newDescription)
-                            rule.description = newDescription:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
+                            rule.description = newDescription:sub(1, rule_constants.MAX_DESCRIPTION_LENGTH)
                         end),
                     })
                 end)
             end)
 
-            -- 'run code' action
-            if rule.action == 'run code' then
-                local runCode = rule['run code']
+            -- Action settings
+            if rule.action == rule_constants.ACTION_RUN_CODE then
+                local runCode = rule[rule_constants.ACTION_RUN_CODE]
 
                 ui.codeEditor('code', runCode.edited or runCode.applied, {
                     onChange = props.validateChange(function (newEdited)

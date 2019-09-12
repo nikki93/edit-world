@@ -1,5 +1,6 @@
 local server = require 'server.init'
 local locals = require 'server.locals'
+local rule_constants = require 'common.rule_constants'
 
 
 local share = server.share
@@ -17,7 +18,7 @@ function server.update(dt)
     local everyFrameParams = { dt = dt }
     locals.nodeManager:forEach(function(id, node)
         if node.type == 'group' then
-            locals.nodeManager:getProxy(node):runRules('every frame', everyFrameParams)
+            locals.nodeManager:getProxy(node):runRules(rule_constants.EVENT_EVERY_FRAME, everyFrameParams)
         end
     end)
 end
