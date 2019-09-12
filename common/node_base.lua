@@ -264,7 +264,7 @@ function node_base.proxyMethods:runRules(event, params)
                     succeeded, err = pcall(compiledHolder.compiled, self, params)
                 end
                 if err then
-                    debug_print.throttledPrint(err, err)
+                    debug_utils.throttledPrint(err, err)
                 end
             end
         end

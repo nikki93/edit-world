@@ -478,11 +478,8 @@ end
 
 
 --
--- Rules / proxies
+-- Proxies
 --
-
-function NodeManager:runThinkRules(dt)
-end
 
 function NodeManager:getProxy(idOrNode)
     local node = self:resolveIdOrNode(idOrNode)

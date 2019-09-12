@@ -17,7 +17,10 @@ function client.update(dt)
         return
     end
 
-    locals.nodeManager:runThinkRules(dt)
+    local everyFrameParams = { dt = dt }
+    locals.nodeManager:forEach(function(id, node)
+        locals.nodeManager:getProxy(node):runRules('every frame', everyFrameParams)
+    end)
 
     if home.player then
         player.update(home.player, dt)
