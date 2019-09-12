@@ -5,6 +5,7 @@ local ui = castle.ui
 
 local MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 72
 local FONT_PIXELS_PER_UNIT = 32
+local ALIGNS = { 'left', 'right', 'center', 'justify' }
 
 
 local node_text = {}
@@ -20,6 +21,70 @@ node_text.DEFAULTS = {
 
 node_text.proxyMethods = setmetatable({}, { __index = node_base.proxyMethods })
 node_text.proxyMetatable = { __index = node_text.proxyMethods }
+
+
+--
+-- Methods
+--
+
+function node_text.proxyMethods:getText()
+    return self.__node.text.text
+end
+
+function node_text.proxyMethods:setText(text)
+    assert(type(text) == 'string', '`text` must be a string')
+    self.__node.text.text = text
+end
+
+function node_text.proxyMethods:getFontUrl()
+    return self.__node.text.fontUrl
+end
+
+function node_text.proxyMethods:setFontUrl(fontUrl)
+    assert(type(fontUrl) == 'string', '`fontUrl` must be a string')
+    self.__node.text.fontUrl = fontUrl
+end
+
+function node_text.proxyMethods:getFontSize()
+    return self.__node.text.fontSize
+end
+
+function node_text.proxyMethods:setFontSize(fontSize)
+    assert(type(fontSize) == 'number', '`fontSize` must be a number')
+    self.__node.text.fontSize = math.floor(fontSize)
+end
+
+function node_text.proxyMethods:getColor()
+    local color = self.__node.text.color
+    return color.r, color.g, color.b, color.a
+end
+
+function node_text.proxyMethods:setColor(r, g, b, a)
+    assert(type(r) == 'number', '`r` must be a number')
+    assert(type(g) == 'number', '`g` must be a number')
+    assert(type(b) == 'number', '`b` must be a number')
+    assert(type(a) == 'number' or type(a) == 'nil', '`a` must either be a number or left out')
+    local color = self.__node.text.color
+    color.r, color.g, color.b, color.a = r, g, b, a
+end
+
+function node_text.proxyMethods:getAlign()
+    return self.__node.text.align
+end
+
+function node_text.proxyMethods:setAlign(align)
+    local valid = false
+    for _, validAlign in ipairs(ALIGNS) do
+        if align == validAlign then
+            valid = true
+            break
+        end
+    end
+    if not valid then
+        error("`align` must be one of '" .. table.concat(ALIGNS, "', '") .. "'")
+    end
+    self.__node.text.align = align
+end
 
 
 --
@@ -112,7 +177,7 @@ function node_text.proxyMethods:uiTypePart(props)
         })
 
         -- Align
-        ui.dropdown('align', node.text.align, { 'left', 'right', 'center', 'justify' }, {
+        ui.dropdown('align', node.text.align, ALIGNS, {
             onChange = props.validateChange(function(newAlign)
                 node.text.align = newAlign
             end),
