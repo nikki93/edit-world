@@ -24,6 +24,105 @@ node_image.proxyMetatable = { __index = node_image.proxyMethods }
 
 
 --
+-- Methods
+--
+
+function node_image.proxyMethods:getUrl()
+    return self.__node.image.url
+end
+
+function node_image.proxyMethods:setUrl(url)
+    assert(type(url) == 'string', '`url` must be a string')
+    self.__node.image.url = url
+end
+
+function node_image.proxyMethods:getColor()
+    local color = self.__node.image.color
+    return color.r, color.g, color.b, color.a
+end
+
+function node_image.proxyMethods:setColor(r, g, b, a)
+    assert(type(r) == 'number', '`r` must be a number')
+    assert(type(g) == 'number', '`g` must be a number')
+    assert(type(b) == 'number', '`b` must be a number')
+    assert(type(a) == 'number' or type(a) == 'nil', '`a` must either be a number or left out')
+    local color = self.__node.image.color
+    color.r, color.g, color.b, color.a = r, g, b, a
+end
+
+function node_image.proxyMethods:getSmoothScaling()
+    return self.__node.image.smoothScaling
+end
+
+function node_image.proxyMethods:setSmoothScaling(smoothScaling)
+    assert(type(smoothScaling) == 'boolean', '`smoothScaling` must be a boolean')
+    self.__node.image.smoothScaling = smoothScaling
+end
+
+function node_image.proxyMethods:getCrop()
+    return self.__node.image.crop
+end
+
+function node_image.proxyMethods:setCrop(crop)
+    assert(type(crop) == 'boolean', '`crop` must be a boolean')
+    self.__node.image.crop = crop
+end
+
+function node_image.proxyMethods:getCropRect()
+    local image = self.__node.image
+    return image.cropX, image.cropY, image.cropWidth, image.cropHeight
+end
+
+function node_image.proxyMethods:setCropRect(cropX, cropY, cropWidth, cropHeight)
+    assert(type(cropX) == 'number', '`cropX` must be a number')
+    assert(type(cropY) == 'number', '`cropY` must be a number')
+    assert((type(cropWidth) == 'number' and type(cropHeight) == 'number') or (type(cropWidth) == 'nil' and type(cropHeight) == 'nil'),
+        '`cropWidth` and `cropHeight` must either be both numbers or both left out')
+    local image = self.__node.image
+    image.cropX, image.cropY = cropX, cropY
+    if cropWidth and cropHeight then
+        image.cropWidth, image.cropHeight = cropWidth, cropHeight
+    end
+end
+
+function node_image.proxyMethods:getCropX()
+    return self.__node.image.cropX
+end
+
+function node_image.proxyMethods:setCropX(cropX)
+    assert(type(cropX) == 'number', '`cropX` must be a number')
+    self.__node.image.cropX = cropX
+end
+
+function node_image.proxyMethods:getCropY()
+    return self.__node.image.cropY
+end
+
+function node_image.proxyMethods:setCropY(cropY)
+    assert(type(cropY) == 'number', '`cropY` must be a number')
+    self.__node.image.cropY = cropY
+end
+
+function node_image.proxyMethods:getCropWidth()
+    return self.__node.image.cropWidth
+end
+
+function node_image.proxyMethods:setCropWidth(cropWidth)
+    assert(type(cropWidth) == 'number', '`cropWidth` must be a number')
+    self.__node.image.cropWidth = cropWidth
+end
+
+function node_image.proxyMethods:getCropHeight()
+    return self.__node.image.cropHeight
+end
+
+function node_image.proxyMethods:setCropHeight(cropHeight)
+    assert(type(cropHeight) == 'number', '`cropHeight` must be a number')
+    self.__node.image.cropHeight = cropHeight
+end
+
+
+--
 -- Draw
 --
 
