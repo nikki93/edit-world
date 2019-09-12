@@ -19,7 +19,9 @@ function client.update(dt)
 
     local everyFrameParams = { dt = dt }
     locals.nodeManager:forEach(function(id, node)
-        locals.nodeManager:getProxy(node):runRules('every frame', everyFrameParams)
+        if node.type == 'group' then
+            locals.nodeManager:getProxy(node):runRules('every frame', everyFrameParams)
+        end
     end)
 
     if home.player then
