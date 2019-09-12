@@ -7,7 +7,7 @@ function debug_utils.throttledPrint(printId, ...)
     local currTime = love.timer.getTime()
     local lastPrintTime = lastPrintTimes[printId]
     if not lastPrintTime or currTime - lastPrintTime > 1 then
-        print('[' .. printId .. ']', ...)
+        print(...)
         lastPrintTimes[printId] = currTime
     end
 end

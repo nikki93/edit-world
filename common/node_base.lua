@@ -1,5 +1,6 @@
 local ui_utils = require 'common.ui_utils'
 local ui = castle.ui
+local code_loader = require 'common.code_loader'
 
 
 local node_base = {}
@@ -223,6 +224,52 @@ function node_base.proxyMethods:setSize(width, height)
     assert(type(height) == 'number', '`height` must be a number')
     local node = self.__node
     node.width, node.height = width, height
+end
+
+
+--
+-- Rules
+--
+
+rule.DEFAULTS = {
+    enabled = true,
+    event = 'every frame',
+    action = 'run code',
+    description = '',
+}
+
+rule.ACTION_DEFAULTS = {
+    ['run code'] = {
+        edited = nil,
+        applied = '',
+    },
+}
+
+function node_base.proxyMethods:runRules(event, params)
+    local node, rules = self.__node, self.__node.rules
+
+    local ruleHolders = {}
+    for ruleIndex = 1, #rules do
+        local rule = rules[ruleIndex]
+        if rule.event == event then
+            if rule.action == 'run code' then
+                local code = rule['run code'].applied
+                local description = rule.description or 'run code'
+                local compiledHolder = code_loader.compile(code, description)
+                ruleHolders[ruleIndex] = compiledHolder
+                
+                local err = compiledHolder.err
+                if compiledHolder.compiled then
+                    local succeeded
+                    succeeded, err = pcall(compiledHolder.compiled, self, params)
+                end
+                if err then
+                    debug_print.throttledPrint(err, err)
+                end
+            end
+        end
+    end
+    self.__ruleHolders = ruleHolders
 end
 
 
