@@ -22,6 +22,9 @@ node_base.DEFAULTS = {
 
 node_base.proxyMethods = setmetatable({}, {
     __index = function(_, k)
+        if k:match('^__') then
+            return nil
+        end
         return function(self)
             -- if type(self) == 'table' and self.__node then
             --     error("nodes of type '" .. self.__node.type .. "' do not have a `:" .. k .. "` method", 2)
@@ -237,10 +240,9 @@ end
 function node_base.proxyMethods:uiNodePart(props)
     local node, nodeManager = self.__node, self.__nodeManager
 
-    if type(self.__nodeSectionOpen) ~= 'boolean' then
-        self.__nodeSectionOpen = true
-    end
-    self.__nodeSectionOpen = ui.section('node', { open = self.__nodeSectionOpen }, function()
+    self.__nodeSectionOpen = ui.section('node', {
+        open = self.__nodeSectionOpen == nil and true or self.__nodeSectionOpen,
+    }, function()
         -- Type
         ui.dropdown('type', node.type, { 'image', 'text', 'group', 'sound' }, {
             onChange = props.validateChange(function(newType)

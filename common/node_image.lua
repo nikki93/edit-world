@@ -132,13 +132,13 @@ local theQuad = love.graphics and love.graphics.newQuad(0, 0, 32, 32, 32, 32)
 function node_image.proxyMethods:draw(transform)
     local node = self.__node
 
-    -- Image
+    -- Drawable
     local filter = node.image.smoothScaling and 'linear' or 'nearest'
     self.__imageHolder = resource_loader.loadImage(node.image.url, filter)
-    local image = self.__imageHolder.image
+    local drawableImage = self.__imageHolder.image
 
     -- Crop
-    local imageWidth, imageHeight = image:getWidth(), image:getHeight()
+    local imageWidth, imageHeight = drawableImage:getWidth(), drawableImage:getHeight()
     if node.image.crop then
         theQuad:setViewport(node.image.cropX, node.image.cropY, node.image.cropWidth, node.image.cropHeight, imageWidth, imageHeight)
     else
@@ -154,7 +154,9 @@ function node_image.proxyMethods:draw(transform)
     theTransform:reset()
     theTransform:apply(transform)
     theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(node.width / quadWidth, node.height / quadHeight)
-    love.graphics.draw(image, theQuad, theTransform)
+
+    -- Draw!
+    love.graphics.draw(drawableImage, theQuad, theTransform)
 end
 
 
@@ -165,10 +167,9 @@ end
 function node_image.proxyMethods:uiTypePart(props)
     local node = self.__node
 
-    if type(self.__imageSectionOpen) ~= 'boolean' then
-        self.__imageSectionOpen = true
-    end
-    self.__imageSectionOpen = ui.section('image', { open = self.__imageSectionOpen }, function()
+    self.__imageSectionOpen = ui.section('image', {
+        open = self.__imageSectionOpen == nil and true or self.__imageSectionOpen,
+    }, function()
         -- URL
         ui.textInput('url', node.image.url, {
             onChange = props.validateChange(function(newUrl)
@@ -227,10 +228,10 @@ function node_image.proxyMethods:uiTypePart(props)
             end)
             if ui.button('reset crop') then
                 props.validateChange(function()
-                    local image = resource_loader.loadImage(node.image.url).image
-                    if image then
+                    local drawableImage = resource_loader.loadImage(node.image.url).image
+                    if drawableImage then
                         node.image.cropX, node.image.cropY = 0, 0
-                        node.image.cropWidth, node.image.cropHeight = image:getDimensions()
+                        node.image.cropWidth, node.image.cropHeight = drawableImage:getDimensions()
                     end
                 end)()
             end

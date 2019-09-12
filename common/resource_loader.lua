@@ -34,4 +34,23 @@ function resource_loader.loadImage(url, filter)
 end
 
 
+local fontHolders = setmetatable({}, { __mode = 'v' })
+
+function resource_loader.loadFont(url, size)
+    local key = size .. '|' .. url
+    local holder = fontHolders[key]
+    if not holder then
+        holder = {}
+        fontHolders[key] = holder
+        holder.font = love.graphics.newFont(size)
+        if url ~= '' then
+            network.async(function()
+                holder.font = love.graphics.newFont(url, size)
+            end)
+        end
+    end
+    return holder
+end
+
+
 return resource_loader
