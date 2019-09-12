@@ -231,14 +231,14 @@ end
 -- Rules
 --
 
-rule.DEFAULTS = {
+local RULE_DEFAULTS = {
     enabled = true,
     event = 'every frame',
     action = 'run code',
     description = '',
 }
 
-rule.ACTION_DEFAULTS = {
+local RULE_ACTION_DEFAULTS = {
     ['run code'] = {
         edited = nil,
         applied = '',
