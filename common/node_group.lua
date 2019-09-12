@@ -78,21 +78,25 @@ function node_group.proxyMethods:uiRulesPart(props)
     local node = self.__node
     local rules = node.group.rules
 
+    -- Add
     if ui.button('add rule') then
         props.validateChange(function()
             local newRuleData = table_utils.clone(rule_constants.DEFAULTS)
             newRuleData.id = lib.uuid()
             newRuleData[newRuleData.action] = rule_constants.ACTION_DEFAULTS[newRuleData.action]
             rules[#rules + 1] = newRuleData
+            self.__ruleSectionOpenIndex = #rules
         end)()
     end
 
-    self.__ruleSectionOpens = {}
+    local ruleIndicesToRemove = {}
+
     for ruleIndex = 1, #rules do
         local rule = rules[ruleIndex]
-        self.__ruleSectionOpens[rule.id] = ui.section(formatRuleTitle(rule), {
+
+        local sectionOpened = ui.section(formatRuleTitle(rule), {
             id = rule.id,
-            open = self.__ruleSectionOpens[rule.id] == nil and true or self.__ruleSectionOpens[rule.id],
+            open = self.__ruleSectionOpenIndex == ruleIndex,
         }, function()
             -- Event, action
             ui_utils.row('event-action', function()
@@ -162,7 +166,29 @@ function node_group.proxyMethods:uiRulesPart(props)
                     end
                 end)
             end
+
+            -- Remove
+            if ui.button('remove rule', { kind = 'danger' }) then
+                ruleIndicesToRemove[ruleIndex] = true
+            end
         end)
+
+        if sectionOpened then
+            self.__ruleSectionOpenIndex = ruleIndex
+        end
+    end
+
+    -- Apply removes
+    local inIndex, n = 1, #rules
+    for outIndex = 1, n do
+        while ruleIndicesToRemove[inIndex] do -- Skip if should remove
+            inIndex = inIndex + 1
+        end
+        rules[outIndex] = rules[inIndex]
+        inIndex = inIndex + 1
+    end
+    if ruleIndicesToRemove[self.__ruleSectionOpenIndex] then
+        self.__ruleSectionOpenIndex = nil
     end
 end
 
