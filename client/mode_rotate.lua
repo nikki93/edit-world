@@ -2,6 +2,7 @@ local selections = require 'client.selections'
 local space = require 'client.space'
 local camera = require 'client.camera'
 local ui = castle.ui
+local math_utils = require 'common.math_utils'
 
 
 local mode_rotate = {}
@@ -58,13 +59,7 @@ function mode_rotate.mousemoved(screenMouseX, screenMouseY, screenMouseDX, scree
         -- Actually rotate nodes
         selections.forEach('primary', function(id, node)
             -- Update rotation
-            node.rotation = node.rotation + dAngle
-            while node.rotation > math.pi do
-                node.rotation = node.rotation - 2 * math.pi
-            end
-            while node.rotation < -math.pi do
-                node.rotation = node.rotation + 2 * math.pi
-            end
+            node.rotation = math_utils.sanitizeAngle(node.rotation + dAngle)
 
             -- Don't update positions if only one node (pivot is its own origin) to avoid floating point inaccuracy issues
             if nSelections > 1 then

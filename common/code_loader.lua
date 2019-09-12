@@ -51,17 +51,17 @@ local sandboxEnv = {
 local function freeze(t, prefix)
     if type(t) == 'table' then
         for k, v in pairs(t) do
-            v = freeze(v, prefix .. k .. '.')
+            t[k] = freeze(v, prefix .. k .. '.')
         end
         setmetatable(t, {
-            __index = function (_, k)
-                error("no such global variable `" .. prefix .. k .. "`", 2)
+            __index = function(_, k)
+                error("no such variable `" .. prefix .. k .. "`", 2)
             end
         })
         t = setmetatable({}, {
             __index = t,
             __newindex = function(_, k)
-                error("can't set global variable `" .. prefix .. k .. "`", 2)
+                error("can't set variable `" .. prefix .. k .. "`" .. (prefix == '' and " -- must be defined with `local`" or ''), 2)
             end,
         })
     end
@@ -77,7 +77,7 @@ function code_loader.compile(code, description)
     if not holder then
         holder = {}
         holders[code] = holder
-        local chunk, err = load('return function (node, params)\n' .. code .. '\nend', description, 't', env)
+        local chunk, err = load('return function(node, params)\n' .. code .. '\nend', description, 't', sandboxEnv)
         if chunk then
             holder.compiled = chunk()
         else

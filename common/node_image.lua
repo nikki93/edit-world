@@ -63,8 +63,8 @@ end
 -- UI
 --
 
-function node_image.proxyMethods:uiType(props)
-    local node, nodeManager = self.__node, self.__nodeManager
+function node_image.proxyMethods:uiTypePart(props)
+    local node = self.__node
 
     if type(self.__imageSectionOpen) ~= 'boolean' then
         self.__imageSectionOpen = true

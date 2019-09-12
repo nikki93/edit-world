@@ -1,6 +1,16 @@
 local math_utils = {}
 
 
+function math_utils.sanitizeAngle(angle)
+    while angle > math.pi do
+        angle = angle - 2 * math.pi
+    end
+    while angle < -math.pi do
+        angle = angle + 2 * math.pi
+    end
+    return angle
+end
+
 function math_utils.getTranslationFromTransform(transform)
     return transform:transformPoint(0, 0)
 end

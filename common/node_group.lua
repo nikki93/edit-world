@@ -28,16 +28,7 @@ end
 
 local sectionOpen = true
 
-function node_group.proxyMethods:uiType(props)
-    local node, nodeManager = self.__node, self.__nodeManager
-
-    ui.tabs('tabs', function()
-        ui.tab('rules', function()
-        end)
-
-        ui.tab('children', function()
-        end)
-    end)
+function node_group.proxyMethods:uiTypePart(props)
 end
 
 

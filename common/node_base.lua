@@ -1,6 +1,9 @@
 local ui_utils = require 'common.ui_utils'
 local ui = castle.ui
 local code_loader = require 'common.code_loader'
+local table_utils = require 'common.table_utils'
+local lib = require 'common.lib'
+local math_utils = require 'common.math_utils'
 
 
 local node_base = {}
@@ -24,7 +27,7 @@ node_base.DEFAULTS = {
 node_base.proxyMethods = setmetatable({}, {
     __index = function(self, k)
         return function()
-            error("nodes of type '" .. self.__node.type .. "' do not have a `:" .. k .. "` method")
+            error("this node does not have a `:" .. k .. "` method", 2)
         end
     end,
 })
@@ -178,13 +181,13 @@ end
 
 function node_base.proxyMethods:setRotation(rotation)
     assert(type(rotation) == 'number', '`rotation` must be a number')
-    self.__node.rotation = rotation
+    self.__node.rotation = math_utils.sanitizeAngle(rotation)
 end
 
 function node_base.proxyMethods:rotate(deltaRotation)
     assert(type(deltaRotation) == 'number', '`deltaRotation` must be a number')
     local node = self.__node
-    node.rotation = node.rotation + deltaRotation
+    node.rotation = math_utils.sanitizeAngle(node.rotation + deltaRotation)
 end
 
 function node_base.proxyMethods:getDepth()
@@ -231,6 +234,14 @@ end
 -- Rules
 --
 
+local RULE_EVENTS = {
+    'every frame',
+}
+
+local RULE_ACTIONS = {
+    'run code',
+}
+
 local RULE_DEFAULTS = {
     enabled = true,
     event = 'every frame',
@@ -245,27 +256,38 @@ local RULE_ACTION_DEFAULTS = {
     },
 }
 
+local function formatRuleTitle(rule)
+    if rule.description == '' then
+        return 'on ' .. rule.event .. ', ' .. rule.action
+    else
+        return rule.description
+    end
+end
+
 function node_base.proxyMethods:runRules(event, params)
-    local node, rules = self.__node, self.__node.rules
+    local node = self.__node
+    local rules = node.rules
 
     local ruleHolders = {}
     for ruleIndex = 1, #rules do
         local rule = rules[ruleIndex]
-        if rule.event == event then
+        if rule.enabled and rule.event == event then
+            local code
+
             if rule.action == 'run code' then
-                local code = rule['run code'].applied
-                local description = rule.description or 'run code'
-                local compiledHolder = code_loader.compile(code, description)
-                ruleHolders[ruleIndex] = compiledHolder
-                
-                local err = compiledHolder.err
-                if compiledHolder.compiled then
-                    local succeeded
-                    succeeded, err = pcall(compiledHolder.compiled, self, params)
-                end
-                if err then
-                    debug_utils.throttledPrint(err, err)
-                end
+                code = rule['run code'].applied
+            end
+
+            local compiledHolder = code_loader.compile(code, formatRuleTitle(rule))
+            ruleHolders[ruleIndex] = compiledHolder
+
+            local err = compiledHolder.err
+            if compiledHolder.compiled then
+                local succeeded
+                succeeded, err = pcall(compiledHolder.compiled, self, params)
+            end
+            if err then
+                debug_utils.throttledPrint(err, err)
             end
         end
     end
@@ -277,10 +299,8 @@ end
 -- UI
 --
 
-function node_base.proxyMethods:ui(props)
+function node_base.proxyMethods:uiNodePart(props)
     local node, nodeManager = self.__node, self.__nodeManager
-
-    local oldType = node.type
 
     if type(self.__nodeSectionOpen) ~= 'boolean' then
         self.__nodeSectionOpen = true
@@ -382,10 +402,112 @@ function node_base.proxyMethods:ui(props)
             })
         end)
     end)
+end
 
-    if node.type == oldType then
-        self:uiType(props)
+function node_base.proxyMethods:uiRulesPart(props)
+    local node = self.__node
+    local rules = node.rules
+
+    if ui.button('add rule') then
+        props.validateChange(function()
+            local newRuleData = table_utils.clone(RULE_DEFAULTS)
+            newRuleData.id = lib.uuid()
+            newRuleData[newRuleData.action] = RULE_ACTION_DEFAULTS[newRuleData.action]
+            rules[#rules + 1] = newRuleData
+        end)()
     end
+
+    self.__ruleSectionOpens = {}
+    for ruleIndex = 1, #rules do
+        local rule = rules[ruleIndex]
+        self.__ruleSectionOpens[rule.id] = ui.section(formatRuleTitle(rule), {
+            id = rule.id,
+            open = self.__ruleSectionOpens[rule.id] == nil and true or self.__ruleSectionOpens[rule.id],
+        }, function()
+            -- Event, action
+            ui_utils.row('event-action', function()
+                ui.dropdown('event', rule.event, RULE_EVENTS, {
+                    onChange = props.validateChange(function(newEvent)
+                        rule.event = newEvent
+                    end),
+                })
+            end, function()
+                ui.dropdown('action', rule.action, RULE_ACTIONS, {
+                    onChange = props.validateChange(function(newAction)
+                        rule[rule.action] = nil
+                        rule.action = newAction
+                        rule[rule.action] = RULE_ACTION_DEFAULTS[rule.action]
+                    end),
+                })
+            end)
+
+            -- Enabled, description
+            ui.box('enabled-description', { flexDirection = 'row', alignItems = 'center' }, function()
+                ui.box('enabled', { width = 104, justifyContent = 'center' }, function()
+                    ui.toggle('rule off', 'rule on', rule.enabled, {
+                        onToggle = props.validateChange(function(newEnabled)
+                            rule.enabled = newEnabled
+                        end),
+                    })
+                end)
+
+                ui.box('description', { flex = 1 }, function()
+                    ui.textInput('description', rule.description, {
+                        maxLength = MAX_RULE_DESCRIPTION_LENGTH,
+                        onChange = props.validateChange(function(newDescription)
+                            rule.description = newDescription:sub(1, MAX_RULE_DESCRIPTION_LENGTH)
+                        end),
+                    })
+                end)
+            end)
+
+            -- 'run code' action
+            if rule.action == 'run code' then
+                local runCode = rule['run code']
+
+                ui.codeEditor('code', runCode.edited or runCode.applied, {
+                    onChange = props.validateChange(function (newEdited)
+                        if newEdited == runCode.applied then
+                            runCode.edited = nil
+                        else
+                            runCode.edited = newEdited
+                        end
+                    end),
+                })
+
+                ui_utils.row('status-apply', function()
+                    if runCode.edited then
+                        ui.markdown('edited')
+                    else
+                        ui.markdown('applied')
+                    end
+                end, function()
+                    if runCode.edited then
+                        if ui.button('apply') then
+                            props.validateChange(function()
+                                runCode.applied = runCode.edited
+                                runCode.edited = nil
+                            end)()
+                        end
+                    end
+                end)
+            end
+        end)
+    end
+end
+
+function node_base.proxyMethods:ui(props)
+    local node = self.__node
+
+    local oldType = node.type
+
+    self:uiNodePart(props)
+
+    if node.type == oldType then -- If the type changed then this would call a stale method
+        self:uiTypePart(props)
+    end
+
+    self:uiRulesPart(props)
 end
 
 
