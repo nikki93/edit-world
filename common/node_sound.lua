@@ -64,20 +64,56 @@ function node_sound.proxyMethods:play()
 end
 
 
--- SFXR randomizers
+-- SFXR
 
-local sfxrRandomizerMethodNames = {
-    'randomize', 'mutate', 'randomPickup', 'randomLaser', 'randomExplosion',
-    'randomPowerup', 'randomHit', 'randomJump', 'randomBlip',
+local SFXR_RANDOMIZERS = {
+    'randomize', 'mutate', 'randomPickup',
+    'randomLaser', 'randomExplosion', 'randomPowerup',
+    'randomHit', 'randomJump', 'randomBlip',
 }
 
-for _, methodName in ipairs(sfxrRandomizerMethodNames) do
+for _, methodName in ipairs(SFXR_RANDOMIZERS) do
     node_sound.proxyMethods[methodName] = function(self)
         local node = self.__node
         assert(node.sound.sfxr, "`:" .. methodName .. "` can only be called on sfxr sounds")
         local sfxrInstance = lib.sfxr.newSound()
         sfxrInstance[methodName](sfxrInstance)
         node.sound.sfxr = table_utils.clone(sfxrInstance)
+    end
+end
+
+local SFXR_PARAMETER_ROWS = {
+    { 'volume', 'master', 0, 1, 'sound', 0, 1 },
+    { 'envelope', 'attack', 0, 1, 'sustain', 0, 1 },
+    { 'envelope', 'punch', 0, 1, 'decay', 0, 1 },
+    { 'frequency', 'start', 0, 1, 'min', 0, 1 },
+    { 'frequency', 'slide', -1, 1, 'dslide', -1, 1 },
+    { 'change', 'amount', -1, 1, 'speed', 0, 1 },
+    { 'duty', 'ratio', 0, 1, 'sweep', -1, 1 },
+    { 'phaser', 'offset', -1, 1, 'sweep', -1, 1 },
+    { 'lowpass', 'cutoff', 0, 1, 'sweep', -1, 1 },
+    { 'lowpass', 'resonance', 0, 1 },
+    { 'highpass', 'cutoff', 0, 1, 'sweep', -1, 1 },
+    { 'vibrato', 'depth', 0, 1, 'speed', 0, 1 },
+}
+
+for _, row in ipairs(SFXR_PARAMETER_ROWS) do
+    local key = row[1]
+    for i = 2, #row, 3 do
+        local subKey, min, max = row[i], row[i + 1], row[i + 2]
+        local methodNameSuffix = key:gsub('^.', string.upper) .. subKey:gsub('^.', string.upper)
+
+        node_sound.proxyMethods['get' .. methodNameSuffix] = function(self)
+            local node = self.__node
+            assert(node.sound.sfxr, "`:get" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            return node.sound.sfxr[key][subKey]
+        end
+
+        node_sound.proxyMethods['set' .. methodNameSuffix] = function(self, value)
+            local node = self.__node
+            assert(node.sound.sfxr, "`:set" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            node.sound.sfxr[key][subKey] = math.max(min, math.min(value, max))
+        end
     end
 end
 
@@ -105,29 +141,27 @@ function node_sound.proxyMethods:uiTypePart(props)
         end
 
         if node.sound.sfxr then -- SFXR?
-            ui.markdown('### randomize')
+            ui.markdown('### randomizers')
 
-            local function randomizerButton(label, methodName)
-                if ui.button(label) then
+            local function randomizerButton(methodName)
+                if ui.button(methodName:gsub('^random(%u)', '%1'):lower()) then
                     props.validateChange(function()
                         self[methodName](self)
+                        self:play()
                     end)()
                 end
             end
 
-            local function randomizerRow(l1, m1, l2, m2, l3, m3)
-                ui_utils.row(l1 .. l2 .. l3, function()
-                    randomizerButton(l1, m1)
+            for i = 1, #SFXR_RANDOMIZERS, 3 do
+                local r1, r2, r3 = SFXR_RANDOMIZERS[i], SFXR_RANDOMIZERS[i + 1], SFXR_RANDOMIZERS[i + 2]
+                ui_utils.row(r1 .. r2 .. r3, function()
+                    randomizerButton(r1)
                 end, function()
-                    randomizerButton(l2, m2)
+                    randomizerButton(r2)
                 end, function()
-                    randomizerButton(l3, m3)
+                    randomizerButton(r3)
                 end)
             end
-
-            randomizerRow('randomize', 'randomize', 'mutate', 'mutate', 'pickup', 'randomPickup')
-            randomizerRow('laser', 'randomLaser', 'explosion', 'randomExplosion', 'powerup', 'randomPowerup')
-            randomizerRow('hit', 'randomHit', 'jump', 'randomJump', 'blip', 'randomBlip')
 
             ui.markdown('### parameters')
 
@@ -167,17 +201,13 @@ function node_sound.proxyMethods:uiTypePart(props)
                 end)
             end
 
-            parameterRow('volume', 'master', 0, 1, 'sound', 0, 1)
-            parameterRow('envelope', 'attack', 0, 1, 'sustain', 0, 1)
-            parameterRow('envelope', 'punch', 0, 1, 'decay', 0, 1)
-            parameterRow('frequency', 'start', 0, 1, 'min', 0, 1)
-            parameterRow('frequency', 'slide', -1, 1, 'dslide', -1, 1)
-            parameterRow('change', 'amount', -1, 1, 'speed', 0, 1)
-            parameterRow('duty', 'ratio', 0, 1, 'sweep', -1, 1)
-            parameterRow('phaser', 'offset', -1, 1, 'sweep', -1, 1)
-            parameterRow('lowpass', 'cutoff', 0, 1, 'sweep', -1, 1)
-            parameterSlider('lowpass', 'resonance', 0, 1)
-            parameterRow('vibrato', 'depth', 0, 1, 'speed', 0, 1)
+            for _, row in ipairs(SFXR_PARAMETER_ROWS) do
+                if #row > 4 then
+                    parameterRow(unpack(row))
+                else
+                    parameterSlider(unpack(row))
+                end
+            end
         end
     end)
 end
