@@ -482,6 +482,9 @@ end
 --
 
 function NodeManager:getProxy(idOrNode)
+    if idOrNode == nil then
+        return nil
+    end
     local node = self:resolveIdOrNode(idOrNode)
     local proxy = self.proxies[node.id]
     if not proxy then

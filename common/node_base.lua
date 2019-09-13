@@ -81,13 +81,13 @@ end
 
 function node_base.proxyMethods:getChildWithId(childId)
     assert(type(childId) == 'string', '`childId` must be a string')
-    return self.__nodeManager:getChildWithId(self.__node, childId)
+    return self.__nodeManager:getProxy(self.__nodeManager:getChildWithId(self.__node, childId))
 end
 
 function node_base.proxyMethods:getChildren()
     local result = {}
     self.__nodeManager:forEachChild(self.__node, function(childId, child)
-        result[childId] = child
+        result[childId] = self.__nodeManager:getProxy(child)
     end)
     return result
 end
@@ -96,7 +96,7 @@ function node_base.proxyMethods:getChildrenWithTag(tag)
     assert(type(tag) == 'string', '`tag` must be a string')
     local result = {}
     self.__nodeManager:forEachChildWithTag(self.__node, tag, function(childId, child)
-        result[childId] = child
+        result[childId] = self.__nodeManager:getProxy(child)
     end)
     return result
 end
@@ -109,7 +109,7 @@ function node_base.proxyMethods:getChildWithTag(tag)
             multipleFound = true
             return false
         end
-        result = child
+        result = self.__nodeManager:getProxy(child)
     end)
     if multipleFound then
         error("multiple children with tag '" .. tag .. "'")
