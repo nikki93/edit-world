@@ -71,7 +71,7 @@ function mode_common.mousePick(screenMouseX, screenMouseY, isAlreadyPicked)
     local pick
     for i = #hits, 1, -1 do
         local j = i == 1 and #hits or i - 1
-        if isAlreadyPicked(hits[i]) then
+        if isAlreadyPicked and isAlreadyPicked(hits[i]) then
             pick = hits[j]
         end
     end
