@@ -10,12 +10,33 @@ local mode_common = {}
 
 
 --
+-- Utilities
+--
+
+function mode_common.getNodesAt(worldX, worldY)
+    local hits = {}
+    locals.nodeManager:forEach(function(id, node)
+        local localMouseX, localMouseY = space.getWorldSpace(node).transform:inverseTransformPoint(worldX, worldY)
+        if math.abs(localMouseX) <= 0.5 * node.width and math.abs(localMouseY) <= 0.5 * node.height then
+            table.insert(hits, node)
+        end
+    end)
+    table.sort(hits, space.compareDepth)
+    return hits
+end
+
+
+--
 -- Draw
 --
 
-function mode_common.drawBoundingBox(node, lineWidth)
+function mode_common.setPixelLineWidth(pixelLineWidth)
+    love.graphics.setLineWidth(pixelLineWidth / math_utils.getScaleFromTransform(camera.getTransform()) / love.graphics.getDPIScale())
+end
+
+function mode_common.drawBoundingBox(node, pixelLineWidth)
     graphics_utils.safePushPop(function()
-        love.graphics.setLineWidth(lineWidth / math_utils.getScaleFromTransform(camera.getTransform()) / love.graphics.getDPIScale())
+        mode_common.setPixelLineWidth(pixelLineWidth)
         love.graphics.applyTransform(space.getWorldSpace(node).transform)
         love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
     end)
@@ -51,29 +72,6 @@ end
 --
 -- Mouse
 --
-
-function mode_common.mousePick(screenMouseX, screenMouseY, isAlreadyPicked)
-    -- Collect hits
-    local hits = {}
-    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
-    locals.nodeManager:forEach(function(id, node)
-        local localMouseX, localMouseY = space.getWorldSpace(node).transform:inverseTransformPoint(worldMouseX, worldMouseY)
-        if math.abs(localMouseX) <= 0.5 * node.width and math.abs(localMouseY) <= 0.5 * node.height then
-            table.insert(hits, node)
-        end
-    end)
-    table.sort(hits, space.compareDepth)
-
-    -- Pick next in order if something's already picked, else pick first
-    local pick
-    for i = #hits, 1, -1 do
-        local j = i == 1 and #hits or i - 1
-        if isAlreadyPicked and isAlreadyPicked(hits[i]) then
-            pick = hits[j]
-        end
-    end
-    return pick or hits[#hits]
-end
 
 function mode_common.getCursorName()
     return 'normal'

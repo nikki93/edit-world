@@ -60,24 +60,50 @@ end
 -- Mouse
 --
 
-function mode_select.mouseClickSelect(screenMouseX, screenMouseY)
-    -- Pick the next thing that's not already selected
-    local pick = mode_common.mousePick(screenMouseX, screenMouseY, function(node)
-        return selections.isSelected(node.id, 'primary', 'conflicting')
-    end)
+function mode_select.mouseClickSingleSelect(screenMouseX, screenMouseY)
+    local hits = mode_common.getNodesAt(camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY))
 
-    -- Deselect everything first if not multi-selecting, then select the pick
-    if not (love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl')) then
-        selections.deselectAll()
+    -- Pick next hit that's not already selected
+    local pick
+    for i = #hits, 1, -1 do
+        local nextI = i == 1 and #hits or i - 1
+        if selections.isSelected(hits[i].id, 'primary') then
+            pick = hits[nextI]
+        end
     end
+    pick = pick or hits[#hits]
+
+    -- Deselect everything, then select the pick
+    selections.deselectAll()
     if pick then
         selections.attemptPrimarySelect(pick.id)
     end
 end
 
+function mode_select.mouseClickMultiSelect(screenMouseX, screenMouseY)
+    local hits = mode_common.getNodesAt(camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY))
+
+    -- If any hit isn't selected, select it
+    for i = #hits, 1, -1 do
+        if not selections.isSelected(hits[i].id, 'primary') then
+            selections.attemptPrimarySelect(hits[i].id)
+            return
+        end
+    end
+
+    -- Otherwise, just deselect the first hit
+    if #hits > 0 then
+        selections.deselect(hits[#hits].id, 'primary')
+    end
+end
+
 function mode_select.mousepressed(x, y, button)
     if button == 1 then
-        mode_select.mouseClickSelect(x, y)
+        if love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl') then
+            mode_select.mouseClickMultiSelect(x, y)
+        else
+            mode_select.mouseClickSingleSelect(x, y)
+        end
     end
 end
 

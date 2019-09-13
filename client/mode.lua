@@ -14,12 +14,14 @@ mode.modes.select = require 'client.mode_select'
 mode.modes.move = require 'client.mode_move'
 mode.modes.rotate = require 'client.mode_rotate'
 mode.modes.resize = require 'client.mode_resize'
+mode.modes.attach = require 'client.mode_attach'
 
 mode.order = {
     'select',
     'move',
     'rotate',
     'resize',
+    'attach',
 }
 
 

@@ -10,7 +10,7 @@ local mode_resize = {}
 local nSelections
 local worldPivotX, worldPivotY = 0, 0
 
-local maintainAspect = true
+local maintainAspect = false
 local resizeAlong = 'both width and height'
 
 
