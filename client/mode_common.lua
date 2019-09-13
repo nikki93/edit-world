@@ -13,29 +13,26 @@ local mode_common = {}
 -- Draw
 --
 
-function mode_common.drawBoundingBox(node)
+function mode_common.drawBoundingBox(node, lineWidth)
     graphics_utils.safePushPop(function()
+        love.graphics.setLineWidth(lineWidth / math_utils.getScaleFromTransform(camera.getTransform()) / love.graphics.getDPIScale())
         love.graphics.applyTransform(space.getWorldSpace(node).transform)
         love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
     end)
 end
 
 function mode_common.drawNodeOverlays(nodesInDepthOrder)
-    local dpiScale = love.graphics.getDPIScale()
-
     local selecteds = {}
 
-    love.graphics.setLineWidth(1 / math_utils.getScaleFromTransform(camera.getTransform()) / dpiScale)
     love.graphics.setColor(0.8, 0.8, 0.8)
     for _, node in ipairs(nodesInDepthOrder) do
         if selections.primary[node.id] or selections.conflicting[node.id] or selections.secondary[node.id] then
             table.insert(selecteds, node)
         else
-            mode_common.drawBoundingBox(node)
+            mode_common.drawBoundingBox(node, 1)
         end
     end
 
-    love.graphics.setLineWidth(3 / math_utils.getScaleFromTransform(camera.getTransform()) / dpiScale)
     for _, node in ipairs(selecteds) do
         local r, g, b
         if selections.primary[node.id] then
@@ -46,7 +43,7 @@ function mode_common.drawNodeOverlays(nodesInDepthOrder)
             r, g, b = 0.5, 0, 1
         end
         love.graphics.setColor(r, g, b)
-        mode_common.drawBoundingBox(node)
+        mode_common.drawBoundingBox(node, 3)
     end
 end
 
