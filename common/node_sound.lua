@@ -82,6 +82,38 @@ for _, methodName in ipairs(SFXR_RANDOMIZERS) do
     end
 end
 
+function node_sound.proxyMethods:getRepeatSpeed()
+    local node = self.__node
+    assert(node.sound.sfxr, '`:getRepeatSpeed` can only be called on sfxr sounds')
+    return node.sound.sfxr.repeatspeed
+end
+
+function node_sound.proxyMethods:setRepeatSpeed(repeatSpeed)
+    local node = self.__node
+    assert(node.sound.sfxr, '`:setRepeatSpeed` can only be called on sfxr sounds')
+    assert(type(repeatSpeed) == 'number', '`repeatSpeed` must be a number')
+    node.sound.sfxr.repeatspeed = math.max(0, math.min(repeatSpeed, 1))
+end
+
+local SFXR_WAVEFORM_MAP = {
+    square = 0, sawtooth = 1, sine = 2, noise = 3,
+    [0] = 'square', [1] = 'sawtooth', [2] = 'sine', [3] = 'noise',
+}
+
+function node_sound.proxyMethods:getWaveform()
+    local node = self.__node
+    assert(node.sound.sfxr, '`:getWaveform` can only be called on sfxr sounds')
+    return SFXR_WAVEFORM_MAP[node.sound.sfxr.waveform]
+end
+
+function node_sound.proxyMethods:setWaveform(waveform)
+    local node = self.__node
+    assert(node.sound.sfxr, '`:setWaveform` can only be called on sfxr sounds')
+    local waveformIndex = SFXR_WAVEFORM_MAP[waveform]
+    assert(type(waveformIndex) == 'number', "`waveform` must be one of 'square', 'sawtooth', 'sine', 'noise'")
+    node.sound.sfxr.waveform = waveformIndex
+end
+
 local SFXR_PARAMETER_ROWS = {
     { 'volume', 'master', 0, 1, 'sound', 0, 1 },
     { 'envelope', 'attack', 0, 1, 'sustain', 0, 1 },
@@ -105,13 +137,20 @@ for _, row in ipairs(SFXR_PARAMETER_ROWS) do
 
         node_sound.proxyMethods['get' .. methodNameSuffix] = function(self)
             local node = self.__node
-            assert(node.sound.sfxr, "`:get" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            if not node.sound.sfxr then
+                error("`:get" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            end
             return node.sound.sfxr[key][subKey]
         end
 
         node_sound.proxyMethods['set' .. methodNameSuffix] = function(self, value)
             local node = self.__node
-            assert(node.sound.sfxr, "`:set" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            if not node.sound.sfxr then
+                error("`:set" .. methodNameSuffix .. "` can only be called on sfxr sounds")
+            end
+            if type(value) ~= 'number' then
+                error('`' .. methodNameSuffix:gsub('^.', string.lower) .. '` must be a number')
+            end
             node.sound.sfxr[key][subKey] = math.max(min, math.min(value, max))
         end
     end
@@ -172,15 +211,11 @@ function node_sound.proxyMethods:uiTypePart(props)
                 end),
             })
 
-            local waveformMap = {
-                square = 0, sawtooth = 1, sine = 2, noise = 3,
-                [0] = 'square', [1] = 'sawtooth', [2] = 'sine', [3] = 'noise',
-            }
-            ui.dropdown('waveform', waveformMap[node.sound.sfxr.waveform], {
+            ui.dropdown('waveform', SFXR_WAVEFORM_MAP[node.sound.sfxr.waveform], {
                 'square', 'sawtooth', 'sine', 'noise',
             }, {
                 onChange = props.validateChange(function(newWaveform)
-                    node.sound.sfxr.waveform = waveformMap[newWaveform]
+                    node.sound.sfxr.waveform = SFXR_WAVEFORM_MAP[newWaveform]
                 end),
             })
 
