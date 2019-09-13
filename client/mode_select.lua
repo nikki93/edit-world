@@ -5,6 +5,7 @@ local space = require 'client.space'
 local camera = require 'client.camera'
 local ui_utils = require 'common.ui_utils'
 local ui = castle.ui
+local mode_common = require 'client.mode_common'
 
 
 local mode_select = {}
@@ -60,26 +61,10 @@ end
 --
 
 function mode_select.mouseClickSelect(screenMouseX, screenMouseY)
-    -- Collect hits
-    local hits = {}
-    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
-    locals.nodeManager:forEach(function(id, node)
-        local localMouseX, localMouseY = space.getWorldSpace(node).transform:inverseTransformPoint(worldMouseX, worldMouseY)
-        if math.abs(localMouseX) <= 0.5 * node.width and math.abs(localMouseY) <= 0.5 * node.height then
-            table.insert(hits, node)
-        end
+    -- Pick the next thing that's not already selected
+    local pick = mode_common.mousePick(screenMouseX, screenMouseY, function(node)
+        return selections.isSelected(node.id, 'primary', 'conflicting')
     end)
-    table.sort(hits, space.compareDepth)
-
-    -- Pick next in order if something's already selected, else pick first
-    local pick
-    for i = #hits, 1, -1 do
-        local j = i == 1 and #hits or i - 1
-        if selections.isSelected(hits[i].id, 'primary', 'conflicting') then
-            pick = hits[j]
-        end
-    end
-    pick = pick or hits[#hits]
 
     -- Deselect everything first if not multi-selecting, then select the pick
     if not (love.keyboard.isDown('lctrl') or love.keyboard.isDown('rctrl')) then

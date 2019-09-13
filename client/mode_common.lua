@@ -55,6 +55,29 @@ end
 -- Mouse
 --
 
+function mode_common.mousePick(screenMouseX, screenMouseY, isAlreadyPicked)
+    -- Collect hits
+    local hits = {}
+    local worldMouseX, worldMouseY = camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY)
+    locals.nodeManager:forEach(function(id, node)
+        local localMouseX, localMouseY = space.getWorldSpace(node).transform:inverseTransformPoint(worldMouseX, worldMouseY)
+        if math.abs(localMouseX) <= 0.5 * node.width and math.abs(localMouseY) <= 0.5 * node.height then
+            table.insert(hits, node)
+        end
+    end)
+    table.sort(hits, space.compareDepth)
+
+    -- Pick next in order if something's already picked, else pick first
+    local pick
+    for i = #hits, 1, -1 do
+        local j = i == 1 and #hits or i - 1
+        if isAlreadyPicked(hits[i]) then
+            pick = hits[j]
+        end
+    end
+    return pick or hits[#hits]
+end
+
 function mode_common.getCursorName()
     return 'normal'
 end
