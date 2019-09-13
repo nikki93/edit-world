@@ -12,5 +12,7 @@ lib.sfxr = require 'https://raw.githubusercontent.com/nucular/sfxrlua/27511554ab
 
 lib.serpent = require 'https://raw.githubusercontent.com/pkulchenko/serpent/879580fb21933f63eb23ece7d60ba2349a8d2848/src/serpent.lua'
 
+lib.marshal = require 'marshal'
+
 
 return lib

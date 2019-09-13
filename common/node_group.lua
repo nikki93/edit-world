@@ -23,7 +23,7 @@ node_group.proxyMetatable = { __index = node_group.proxyMethods }
 -- Draw
 --
 
-function node_group.proxyMethods:draw(transform, cameraTransform)
+function node_group.proxyMethods:draw(transform)
 end
 
 
