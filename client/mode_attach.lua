@@ -15,11 +15,11 @@ local mode_attach = {}
 --
 
 local dragging = false
-local pressedWorldMouseX, pressedWorldMouseY
 local currentTarget
 
 function mode_attach.update(dt)
     if dragging then
+        -- Watch for applicable targets at mouse position
         local screenMouseX, screenMouseY = love.mouse.getPosition()
         local hits = mode_common.getNodesAt(camera.getTransform():inverseTransformPoint(screenMouseX, screenMouseY))
         currentTarget = nil
@@ -28,14 +28,18 @@ function mode_attach.update(dt)
             if hit.type == 'group' then
                 currentTarget = hit
             end
+            if selections.isSelected(hit.id, 'primary') then
+                currentTarget = nil
+                break
+            end
         end
     end
 end
 
 function mode_attach.mousepressed(x, y, button, isTouch, presses)
     if button == 1 then
-        pressedWorldMouseX, pressedWorldMouseY = camera.getTransform():inverseTransformPoint(x, y)
-        local hits = mode_common.getNodesAt(pressedWorldMouseX, pressedWorldMouseY)
+        -- Check if clicked on a selection
+        local hits = mode_common.getNodesAt(camera.getTransform():inverseTransformPoint(x, y))
         for _, hit in ipairs(hits) do
             if selections.isSelected(hit.id, 'primary') then
                 dragging = true
@@ -48,6 +52,7 @@ end
 function mode_attach.mousereleased(x, y, button, isTouch, presses)
     if button == 1 then
         if dragging then
+            -- Set target as parent, keeping nodes in same world-space transformation
             local targetTransform = space.getWorldSpace(currentTarget).transform
             selections.forEach('primary', function(id, node)
                 local succeeded, err = pcall(function()
@@ -62,7 +67,6 @@ function mode_attach.mousereleased(x, y, button, isTouch, presses)
                 end
             end)
 
-            pressedWorldMouseX, pressedWorldMouseY = nil, nil
             dragging = false
             currentTarget = nil
         end
@@ -95,9 +99,9 @@ function mode_attach.drawNodeOverlays(nodesInDepthOrder)
         love.graphics.setColor(0.7, 0.6, 0.9)
         selections.forEach('primary', function(id, node)
             local worldEndX, worldEndY
-            if dragging then -- Attachment lines to mouse if dragging
+            if dragging then -- To mouse if dragging
                 worldEndX, worldEndY = camera.getTransform():inverseTransformPoint(love.mouse.getPosition())
-            elseif node.parentId then -- Attachment lines to parent if not dragging
+            elseif node.parentId then -- To parent if not dragging
                 local parent = locals.nodeManager:getById(node.parentId)
                 if parent then
                     worldEndX, worldEndY = math_utils.getTranslationFromTransform(space.getWorldSpace(parent).transform)
