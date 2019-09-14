@@ -52,6 +52,17 @@ function mode_common.drawNodeOverlays(nodesInDepthOrder)
         else
             mode_common.drawBoundingBox(node, 1)
         end
+
+        if node.parentId then
+            local parent = locals.nodeManager:getById(node.parentId)
+            if parent then
+                local worldStartX, worldStartY = math_utils.getTranslationFromTransform(space.getWorldSpace(node).transform)
+                local worldEndX, worldEndY = math_utils.getTranslationFromTransform(space.getWorldSpace(parent).transform)
+                love.graphics.setLineWidth(mode_common.pixelsToWorld(2))
+                love.graphics.line(worldStartX, worldStartY, worldEndX, worldEndY)
+                love.graphics.circle('fill', worldStartX, worldStartY, mode_common.pixelsToWorld(6))
+            end
+        end
     end
 
     for _, node in ipairs(selecteds) do
