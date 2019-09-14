@@ -61,7 +61,7 @@ local function freeze(t, prefix)
         t = setmetatable({}, {
             __index = t,
             __newindex = function(_, k)
-                error("can't set variable `" .. prefix .. k .. "`" .. (prefix == '' and " -- must be defined with `local`" or ''), 2)
+                error("no such variable `" .. prefix .. k .. "`" .. (prefix == '' and " -- must be defined using `local`" or ''), 2)
             end,
         })
     end
