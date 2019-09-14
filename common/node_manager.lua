@@ -310,7 +310,9 @@ function NodeManager:trackDiff(id, diff, rootExact)
     else -- New node
         if diff.parentId then
             self:trackParent(id, diff.parentId)
-            self:trackTags(id, diff.parentId, diff.tags)
+            for tag in pairs(diff.tags) do
+                self:trackTag(id, diff.parentId, tag)
+            end
         end
     end
 end
@@ -336,6 +338,19 @@ function NodeManager:setParent(node, newParentId)
 
         -- Track new parent
         if newParentId then
+            local cycle = false
+            do
+                local curr = self:getById(newParentId)
+                while curr do
+                    if curr.id == node.id then
+                        cycle = true
+                        break
+                    end
+                    curr = self:getById(curr.parentId)
+                end
+            end
+            assert(not cycle, "can't add a node as a child of itself or of one of its descendants!")
+
             self:trackParent(id, newParentId)
             for tag in pairs(node.tags) do
                 self:trackTag(id, newParentId, tag)
