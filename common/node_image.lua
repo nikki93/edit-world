@@ -10,6 +10,7 @@ local node_image = {}
 node_image.DEFAULTS = {
     url = '',
     color = { r = 1, g = 1, b = 1, a = 1 },
+    fitMode = 'contain',
     smoothScaling = true,
     crop = false,
     cropX = 0,
@@ -57,6 +58,15 @@ end
 function node_image.proxyMethods:setSmoothScaling(smoothScaling)
     assert(type(smoothScaling) == 'boolean', '`smoothScaling` must be a boolean')
     self.__node.image.smoothScaling = smoothScaling
+end
+
+function node_image.proxyMethods:getFitMode()
+    return self.__node.image.fitMode
+end
+
+function node_image.proxyMethods:setFitMode(fitMode)
+    assert(type(fitMode) == 'string', '`fitMode` must be a string')
+    self.__node.image.fitMode = fitMode
 end
 
 function node_image.proxyMethods:getCrop()
@@ -150,10 +160,17 @@ function node_image.proxyMethods:draw(transform)
     local color = node.image.color
     love.graphics.setColor(color.r, color.g, color.b, color.a)
 
+    -- Scale
+    local scaleX, scaleY = node.width / quadWidth, node.height / quadHeight
+    if node.image.fitMode == 'contain' then
+        scaleX = math.min(scaleX, scaleY)
+        scaleY = scaleX
+    end
+
     -- Transform
     theTransform:reset()
     theTransform:apply(transform)
-    theTransform:translate(-0.5 * node.width, -0.5 * node.height):scale(node.width / quadWidth, node.height / quadHeight)
+    theTransform:scale(scaleX, scaleY):translate(-0.5 * quadWidth, -0.5 * quadHeight)
 
     -- Draw!
     love.graphics.draw(drawableImage, theQuad, theTransform)
@@ -182,6 +199,13 @@ function node_image.proxyMethods:uiTypePart(props)
         ui.colorPicker('color', color.r, color.g, color.b, color.a, {
             onChange = props.validateChange(function(newColor)
                 color.r, color.g, color.b, color.a = newColor.r, newColor.g, newColor.b, newColor.a
+            end),
+        })
+
+        -- Fit mode
+        ui.dropdown('fit mode', node.image.fitMode, { 'contain', 'stretch' }, {
+            onChange = props.validateChange(function(newFitMode)
+                node.image.fitMode = newFitMode
             end),
         })
 
