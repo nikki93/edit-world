@@ -33,7 +33,11 @@ function space.getWorldSpace(node)
 end
 
 function space.getParentWorldSpace(node)
-    return space.getWorldSpace(locals.nodeManager:getById(node.parentId))
+    local parent = locals.nodeManager:getById(node.parentId)
+    if parent and parent.deleting then
+        parent = nil
+    end
+    return space.getWorldSpace(parent)
 end
 
 function space.clearWorldSpaceCache()

@@ -6,6 +6,7 @@ local camera = require 'client.camera'
 local ui_utils = require 'common.ui_utils'
 local ui = castle.ui
 local mode_common = require 'client.mode_common'
+local math_utils = require 'common.math_utils'
 
 
 local mode_select = {}
@@ -25,6 +26,11 @@ end
 
 function mode_select.deleteNodes()
     selections.forEach('primary', function(id)
+        locals.nodeManager:forEachChild(id, function(id, node)
+            local transform = space.getWorldSpace(node).transform
+            node.x, node.y = math_utils.getTranslationFromTransform(transform)
+            node.rotation = math_utils.getRotationFromTransform(transform)
+        end)
         locals.nodeManager:delete(id)
     end)
 end
