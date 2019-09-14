@@ -88,16 +88,15 @@ function mode_attach.drawNodeOverlays(nodesInDepthOrder)
     -- Target
     if currentTarget then
         graphics_utils.safePushPop('all', function()
-            love.graphics.setColor(0.7, 0, 0.4)
-            mode_common.drawBoundingBox(currentTarget, 5)
+            love.graphics.setColor(1, 0, 1)
+            mode_common.drawBoundingBox(currentTarget, 2)
         end)
     end
 
     -- Attachment lines
     graphics_utils.safePushPop('all', function()
-        mode_common.setPixelLineWidth(3)
-        love.graphics.setColor(0.7, 0.6, 0.9)
         selections.forEach('primary', function(id, node)
+            -- Compute end point
             local worldEndX, worldEndY
             if dragging then -- To mouse if dragging
                 worldEndX, worldEndY = camera.getTransform():inverseTransformPoint(love.mouse.getPosition())
@@ -105,11 +104,27 @@ function mode_attach.drawNodeOverlays(nodesInDepthOrder)
                 local parent = locals.nodeManager:getById(node.parentId)
                 if parent then
                     worldEndX, worldEndY = math_utils.getTranslationFromTransform(space.getWorldSpace(parent).transform)
+                    love.graphics.setColor(1, 0, 1)
+                    mode_common.drawBoundingBox(parent, 2)
                 end
             end
+
             if worldEndX and worldEndY then
                 local worldStartX, worldStartY = math_utils.getTranslationFromTransform(space.getWorldSpace(node).transform)
+                if dragging then
+                    if currentTarget then
+                        love.graphics.setColor(1, 0, 1)
+                    else -- Different color if detaching
+                        love.graphics.setColor(0, 0.4, 0.8)
+                    end
+                else
+                    love.graphics.setColor(1, 0, 1)
+                end
+                love.graphics.setLineWidth(mode_common.pixelsToWorld(2))
                 love.graphics.line(worldStartX, worldStartY, worldEndX, worldEndY)
+                if not (dragging and not currentTarget) then -- Don't draw ends if detaching
+                    love.graphics.circle('fill', worldStartX, worldStartY, mode_common.pixelsToWorld(6))
+                end
             end
         end)
     end)

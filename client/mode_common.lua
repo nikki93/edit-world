@@ -30,13 +30,13 @@ end
 -- Draw
 --
 
-function mode_common.setPixelLineWidth(pixelLineWidth)
-    love.graphics.setLineWidth(pixelLineWidth / math_utils.getScaleFromTransform(camera.getTransform()) / love.graphics.getDPIScale())
+function mode_common.pixelsToWorld(pixels)
+    return pixels / math_utils.getScaleFromTransform(camera.getTransform()) / love.graphics.getDPIScale()
 end
 
 function mode_common.drawBoundingBox(node, pixelLineWidth)
     graphics_utils.safePushPop(function()
-        mode_common.setPixelLineWidth(pixelLineWidth)
+        love.graphics.setLineWidth(mode_common.pixelsToWorld(pixelLineWidth))
         love.graphics.applyTransform(space.getWorldSpace(node).transform)
         love.graphics.rectangle('line', -0.5 * node.width, -0.5 * node.height, node.width, node.height)
     end)
