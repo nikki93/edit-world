@@ -50,6 +50,10 @@ function mode.getMode()
     return currentMode
 end
 
+function mode.exitMode()
+    mode.setMode('select')
+end
+
 
 --
 -- Update
@@ -102,6 +106,7 @@ end
 
 function mode.mousereleased(x, y, button, isTouch, presses)
     fireEvent('mousereleased', x, y, button, isTouch, presses)
+    mode.exitMode()
 end
 
 function mode.mousemoved(x, y, dx, dy, isTouch)
