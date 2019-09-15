@@ -5,6 +5,9 @@ local selections = require 'client.selections'
 local locals = require 'client.locals'
 
 
+local share = client.share
+
+
 local modeSectionOpen = true
 
 
