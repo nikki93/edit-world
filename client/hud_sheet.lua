@@ -324,14 +324,16 @@ do
     for sliceName, slice in pairs(hud_sheet.slices) do
         slice.quads = {}
         if slice.focusx then -- Cursor
-            local imageData = love.image.newImageData(CURSOR_SCALE * slice.w, CURSOR_SCALE * slice.h)
-            for i = 0, CURSOR_SCALE * slice.w - 1 do
-                for j = 0, CURSOR_SCALE * slice.h - 1 do
-                    local sourceI, sourceJ = slice.x + math.floor(i / CURSOR_SCALE), slice.y + math.floor(j / CURSOR_SCALE)
-                    imageData:setPixel(i, j, hud_sheet.imageData:getPixel(sourceI, sourceJ))
+            if castle.system.isDesktop() then
+                local imageData = love.image.newImageData(CURSOR_SCALE * slice.w, CURSOR_SCALE * slice.h)
+                for i = 0, CURSOR_SCALE * slice.w - 1 do
+                    for j = 0, CURSOR_SCALE * slice.h - 1 do
+                        local sourceI, sourceJ = slice.x + math.floor(i / CURSOR_SCALE), slice.y + math.floor(j / CURSOR_SCALE)
+                        imageData:setPixel(i, j, hud_sheet.imageData:getPixel(sourceI, sourceJ))
+                    end
                 end
-            end
-            slice.cursor = love.mouse.newCursor(imageData, slice.focusx, slice.focusy)
+                slice.cursor = love.mouse.newCursor(imageData, slice.focusx, slice.focusy)
+            end 
         elseif slice.w then -- Single quad
             slice.quads.single = love.graphics.newQuad(slice.x, slice.y, slice.w, slice.h, W, H)
         elseif slice.w1 then -- 3x3 quads

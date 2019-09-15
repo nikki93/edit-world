@@ -30,8 +30,10 @@ hud.reloadFonts()
 local currCursorName
 
 local function setCursor(cursorName)
-    local cursor = assert(hud_sheet.slices['cursor_' .. cursorName].cursor, "internal error: cursor not found")
-    love.mouse.setCursor(cursor)
+    if castle.system.isDesktop() then
+        local cursor = assert(hud_sheet.slices['cursor_' .. cursorName].cursor, "internal error: cursor not found")
+        love.mouse.setCursor(cursor)
+    end
     currCursorName = cursorName
 end
 
