@@ -8,9 +8,6 @@ local locals = require 'client.locals'
 local share = client.share
 
 
-local modeSectionOpen = true
-
-
 local function uiForNode(node, isConflicting)
     if isConflicting then -- Show which other player is locking this node
         local player = share.players[share.nodes.locks[node.id]]
@@ -56,6 +53,9 @@ local function uiForNode(node, isConflicting)
     ui.markdown('---')
 end
 
+
+local modeSectionOpen = true
+
 function client.uiupdate()
     if not client.connected then
         ui.markdown('connecting...')
@@ -63,7 +63,9 @@ function client.uiupdate()
     end
 
     ui.tabs('main', function()
+        -- Nodes
         ui.tab('nodes', function()
+            -- Mode
             modeSectionOpen = ui.section(mode.getMode(), {
                 open = modeSectionOpen,
             }, function()
@@ -71,12 +73,7 @@ function client.uiupdate()
             end)
             ui.markdown('---')
 
-            local function allowedChange(func)
-                return function(...)
-                    func(...)
-                end
-            end
-
+            -- Nodes
             selections.forEach('primary', function(id, node)
                 uiForNode(node, false)
             end)
@@ -85,6 +82,7 @@ function client.uiupdate()
             end)
         end)
 
+        -- World
         ui.tab('world', function()
             -- Background color
             local bgc = share.settings.backgroundColor
