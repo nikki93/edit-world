@@ -1,5 +1,6 @@
 local server = require 'server.init'
 local locals = require 'server.locals'
+local settings = require 'common.settings'
 
 
 local share = server.share
@@ -17,9 +18,11 @@ function server.receive(clientId, msg, ...)
         -- Settings
         share.settings = post.data.settings
 
-        -- Migrate old settings formats
-        if post.data.backgroundColor then
-            share.settings.backgroundColor = post.data.backgroundColor
+        -- Fill default settings where missing
+        for k, v in pairs(settings.DEFAULTS) do
+            if share.settings[k] == nil then
+                share.settings[k] = v
+            end
         end
 
         -- Nodes
