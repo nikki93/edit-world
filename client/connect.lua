@@ -32,7 +32,7 @@ function client.connect()
     -- If a post was opened, let the server know
     local initialPost = castle.post.getInitialPost()
     if initialPost then
-        client.send('postOpened', post)
+        client.send('postOpened', initialPost)
     end
 
     -- Loaded
