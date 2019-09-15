@@ -178,6 +178,10 @@ function node_base.proxyMethods:move(deltaX, deltaY)
     node.x, node.y = node.x + deltaX, node.y + deltaY
 end
 
+function node_base.proxyMethods:translate(deltaX, deltaY)
+    self:move(deltaX, deltaY)
+end
+
 function node_base.proxyMethods:getRotation()
     return self.__node.rotation
 end
