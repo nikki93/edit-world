@@ -11,6 +11,51 @@ local share = client.share
 local modeSectionOpen = true
 
 
+local function uiForNode(node, isConflicting)
+    if isConflicting then -- Show which other player is locking this node
+        local player = share.players[share.nodes.locks[node.id]]
+        if player and player.me and player.me.username then
+            if player.me.photoUrl then
+                ui.box('lock-description', { flexDirection = 'row' }, function()
+                    ui.box('locked-by', { marginRight = 10, justifyContent = 'center' }, function()
+                        ui.markdown('🔒 locked by')
+                    end)
+                    ui.box('lock-photo', { maxWidth = 16, maxHeight = 16, justifyContent = 'center' }, function()
+                        ui.image(player.me.photoUrl)
+                    end)
+                    ui.box('lock-username', { flex = 1, marginLeft = '8px', justifyContent = 'center' }, function()
+                        ui.markdown(player.me.username)
+                    end)
+                end)
+            else
+                ui.markdown('🔒 locked by ' .. player.username)
+            end
+        else
+            ui.markdown('🔒 locked by unknown')
+        end
+    end
+
+    ui.box('node-' .. node.id, isConflicting and {
+        border = '1px solid red',
+        padding = 2,
+        marginBottom = 2,
+    } or {}, function()
+        locals.nodeManager:getProxy(node):ui({
+            validateChange = function(func)
+                if isConflicting then
+                    return function()
+                        print("can't edit this node because it is locked")
+                    end
+                else
+                    return func
+                end
+            end,
+        })
+    end)
+
+    ui.markdown('---')
+end
+
 function client.uiupdate()
     if not client.connected then
         ui.markdown('connecting...')
@@ -28,18 +73,15 @@ function client.uiupdate()
 
             local function allowedChange(func)
                 return function(...)
-                    -- TODO(nikki): Make sure not a conflicting selection
                     func(...)
                 end
             end
 
             selections.forEach('primary', function(id, node)
-                ui.box('node-' .. node.id, function()
-                    locals.nodeManager:getProxy(node):ui({
-                        validateChange = allowedChange,
-                    })
-                end)
-                ui.markdown('---')
+                uiForNode(node, false)
+            end)
+            selections.forEach('conflicting', function(id, node)
+                uiForNode(node, true)
             end)
         end)
 
