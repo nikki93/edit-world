@@ -9,8 +9,10 @@ local home = client.home
 
 
 function client.connect()
+    -- Player
     home.player = player.init(share.players[client.id])
 
+    -- Nodes
     home.nodes = {}
     home.nodes.controlled = {}
     locals.nodeManager = node_manager.new({
@@ -21,13 +23,19 @@ function client.connect()
         clientId = client.id,
     })
 
-    -- TODO(nikki): Handle `castle.post.getInitialPost()` being non-`nil`
-
+    -- Apply diffs that `client.changing` deferred
     if locals.deferredShareDiff then -- If `client.changing` gets a diff before `client.connect` it defers it for later
         client.changing(locals.deferredShareDiff)
         locals.deferredShareDiff = nil
     end
 
+    -- If a post was opened, let the server know
+    local initialPost = castle.post.getInitialPost()
+    if initialPost then
+        client.send('postOpened', post)
+    end
+
+    -- Loaded
     network.async(function()
         locals.loaded = true
     end)

@@ -319,6 +319,54 @@ end
 
 
 --
+-- Save / load
+--
+
+function NodeManager:load(nodeDatas)
+    assert(self.isServer, "only servers can load nodes for now")
+
+    for id, nodeData in pairs(nodeDatas) do
+        assert(not self:getById(id), "node with id '" .. id .. "' already loaded")
+
+        local newNodeData = table_utils.clone(nodeData)
+
+        -- Fill default values where missing
+        for k, v in pairs(node_types.base.DEFAULTS) do
+            if newNodeData[k] == nil then
+                newNodeData[k] = v
+            end
+        end
+        for k, v in pairs(node_types[newNodeData.type].DEFAULTS) do
+            if newNodeData[newNodeData.type][k] == nil then
+                newNodeData[newNodeData.type][k] = v
+            end
+        end
+
+        -- Insert in table
+        self.shared[id] = newNodeData
+        local newNode = self.shared[id]
+
+        -- Track parent
+        local parentId = newNode.parentId
+        if parentId and (self.shared[parentId] or nodeDatas[parentId]) then
+            self:trackParent(id, parentId)
+            for tag in pairs(newNode.tags) do
+                self:trackTag(id, parentId, tag)
+            end
+        end
+    end
+end
+
+function NodeManager:save()
+    local nodeDatas = {}
+    self:forEach(function (id, node)
+        nodeDatas[id] = table_utils.clone(node)
+    end)
+    return nodeDatas
+end
+
+
+--
 -- Parent / child
 --
 
