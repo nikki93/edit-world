@@ -40,6 +40,8 @@ function client.connect()
     network.async(function()
         locals.loaded = true
 
-        mode_select.newNode()
+        if not castle.system.isDestkop() then
+            mode_select.newNode()
+        end
     end)
 end
