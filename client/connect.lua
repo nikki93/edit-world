@@ -2,6 +2,7 @@ local client = require 'client.init'
 local locals = require 'client.locals'
 local node_manager = require 'common.node_manager'
 local player = require 'client.player'
+local mode_select = require 'client.mode_select'
 
 
 local share = client.share
@@ -38,5 +39,9 @@ function client.connect()
     -- Loaded
     network.async(function()
         locals.loaded = true
+
+        if not castle.system.isDestkop() then
+            mode_select.newNode()
+        end
     end)
 end
