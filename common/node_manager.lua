@@ -42,6 +42,8 @@ end
 --
 
 function NodeManager:new(opts)
+    opts = opts or {}
+
     -- Initial data
     local newNodeData
     if opts.initialData then
@@ -77,6 +79,7 @@ function NodeManager:new(opts)
 end
 
 function NodeManager:clone(idOrNode, opts)
+    opts = opts or {}
     local node = self:resolveIdOrNode(idOrNode)
     opts = table_utils.clone(opts)
     opts.initialData = node

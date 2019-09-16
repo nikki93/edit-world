@@ -21,4 +21,7 @@ function server.load()
         shared = share.nodes.shared,
         locks = share.nodes.locks,
     })
+
+    local newNode = locals.nodeManager:new()
+    newNode.x, newNode.y = 0, 0
 end
