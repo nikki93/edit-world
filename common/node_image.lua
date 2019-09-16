@@ -11,7 +11,7 @@ node_image.DEFAULTS = {
     url = '',
     color = { r = 1, g = 1, b = 1, a = 1 },
     fitMode = 'contain',
-    smoothScaling = true,
+    smoothScaling = false,
     crop = false,
     cropX = 0,
     cropY = 0,
