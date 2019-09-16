@@ -7,7 +7,7 @@ if USE_CASTLE_CONFIG then
     client.useCastleConfig()
 else
     client.enabled = true
-    client.start('127.0.0.1:22122')
+    client.start('192.168.1.9:22122')
 end
 
 
