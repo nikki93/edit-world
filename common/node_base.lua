@@ -3,6 +3,18 @@ local ui = castle.ui
 local math_utils = require 'common.math_utils'
 
 
+local VARIABLE_VALUE_TYPE_ALLOWED = {
+    ['nil'] = true,
+    ['boolean'] = true,
+    ['number'] = true,
+    ['string'] = true,
+    ['function'] = false,
+    ['userdata'] = false,
+    ['thread'] = false,
+    ['table'] = true,
+}
+
+
 local node_base = {}
 
 
@@ -17,6 +29,7 @@ node_base.DEFAULTS = {
     depth = 100,
     width = 4,
     height = 4,
+    variables = {},
 }
 
 
@@ -230,6 +243,28 @@ function node_base.proxyMethods:setSize(width, height)
     assert(type(height) == 'number', '`height` must be a number')
     local node = self.__node
     node.width, node.height = width, height
+end
+
+
+-- Variables
+
+function node_base.proxyMethods:get(variableName, ...)
+    if variableName == nil then
+        return nil
+    end
+    assert(type(variableName) == 'string', '`variableName` must be a string')
+    return self.__node.variables[variableName], self:get(...)
+end
+
+function node_base.proxyMethods:set(variableName, value, ...)
+    if variableName == nil then
+        return
+    end
+    assert(type(variableName) == 'string', '`variableName` must be a string')
+    local valueType = type(value)
+    assert(VARIABLE_VALUE_TYPE_ALLOWED[valueType], "variable values of type '" .. valueType .. "' are not allowed")
+    self.__node.variables[variableName] = value
+    self:set(...)
 end
 
 
