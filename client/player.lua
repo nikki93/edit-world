@@ -30,16 +30,16 @@ end
 
 function player.update(p, dt)
     local vx, vy = 0, 0
-    if love.keyboard.isDown('a') then
+    if love.keyboard.isDown('a') or love.keyboard.isDown('left') then
         vx = vx - WALK_SPEED
     end
-    if love.keyboard.isDown('d') then
+    if love.keyboard.isDown('d') or love.keyboard.isDown('right') then
         vx = vx + WALK_SPEED
     end
-    if love.keyboard.isDown('w') then
+    if love.keyboard.isDown('w') or love.keyboard.isDown('up') then
         vy = vy - WALK_SPEED
     end
-    if love.keyboard.isDown('s') then
+    if love.keyboard.isDown('s') or love.keyboard.isDown('down') then
         vy = vy + WALK_SPEED
     end
     p.x, p.y = p.x + vx * dt, p.y + vy * dt
