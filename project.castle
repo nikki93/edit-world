@@ -2,6 +2,7 @@ main: main_client.lua
 multiplayer:
     enabled: true
     serverMain: main_server.lua
+dimensions: 800
 title: Edit World
 owner: nikki
 description: Edit the world!!!1
