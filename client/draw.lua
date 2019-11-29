@@ -100,9 +100,9 @@ function client.draw()
     end)
 
     -- HUD
-    graphics_utils.safePushPop('all', function()
-        hud.draw()
-    end)
+    -- graphics_utils.safePushPop('all', function()
+    --     hud.draw()
+    -- end)
 
     -- Debug HUD
     graphics_utils.safePushPop('all', function()

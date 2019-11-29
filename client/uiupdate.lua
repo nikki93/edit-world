@@ -62,6 +62,14 @@ function client.uiupdate()
         return
     end
 
+    ui.pane('toolbar', function()
+        for _, modeName in ipairs(mode.order) do
+            if ui.button(modeName) then
+                mode.setMode(modeName)
+            end
+        end
+    end)
+
     ui.tabs('main', function()
         -- Nodes
         ui.tab('nodes', function()
