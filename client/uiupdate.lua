@@ -64,23 +64,26 @@ function client.uiupdate()
 
     ui.pane('toolbar', function()
         for _, modeName in ipairs(mode.order) do
-            if ui.button(modeName) then
-                mode.setMode(modeName)
-            end
+            local selected = modeName == mode.getMode()
+            ui.button(modeName, {
+                selected = selected,
+                onClick = function()
+                    mode.setMode(modeName)
+                end,
+
+                popoverAllowed = selected,
+                popover = function()
+                    if selected then
+                        mode.uiupdate()
+                    end
+                end,
+            })
         end
     end)
 
     ui.tabs('main', function()
         -- Nodes
         ui.tab('nodes', function()
-            -- Mode
-            modeSectionOpen = ui.section(mode.getMode(), {
-                open = modeSectionOpen,
-            }, function()
-                mode.uiupdate()
-            end)
-            ui.markdown('---')
-
             -- Nodes
             selections.forEach('primary', function(id, node)
                 uiForNode(node, false)
