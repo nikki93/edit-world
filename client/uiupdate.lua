@@ -63,6 +63,7 @@ function client.uiupdate()
     end
 
     ui.pane('toolbar', function()
+        local switchToMode
         for _, modeName in ipairs(mode.order) do
             local selected = modeName == mode.getMode()
             local icon, iconFamily = 'question', 'FontAwesome5'
@@ -76,7 +77,7 @@ function client.uiupdate()
 
                 selected = selected,
                 onClick = function()
-                    mode.setMode(modeName)
+                    switchToMode = modeName
                 end,
 
                 popoverAllowed = selected,
@@ -86,6 +87,9 @@ function client.uiupdate()
                     end
                 end,
             })
+        end
+        if switchToMode then
+            mode.setMode(switchToMode)
         end
     end)
 
