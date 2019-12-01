@@ -65,7 +65,15 @@ function client.uiupdate()
     ui.pane('toolbar', function()
         for _, modeName in ipairs(mode.order) do
             local selected = modeName == mode.getMode()
+            local icon, iconFamily = 'question', 'FontAwesome5'
+            if mode.modes[modeName].getIcon then
+                icon, iconFamily = mode.modes[modeName].getIcon()
+            end
             ui.button(modeName, {
+                icon = icon,
+                iconFamily = iconFamily,
+                hideLabel = not selected,
+
                 selected = selected,
                 onClick = function()
                     mode.setMode(modeName)

@@ -82,6 +82,10 @@ function mode_attach.getCursorName()
     return 'normal_add'
 end
 
+function mode_attach.getIcon()
+    return 'link', 'AntDesign'
+end
+
 function mode_attach.drawNodeOverlays(nodesInDepthOrder)
     mode_common.drawNodeOverlays(nodesInDepthOrder)
 

@@ -122,6 +122,10 @@ end
 -- UI
 --
 
+function mode_select.getIcon()
+    return 'mouse-pointer', 'Entypo'
+end
+
 function mode_select.uiupdate()
     ui_utils.row('top-bar', function()
         if ui.button('new') then

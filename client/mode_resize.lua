@@ -93,6 +93,10 @@ end
 -- UI
 --
 
+function mode_resize.getIcon()
+    return 'md-resize', 'Ionicons'
+end
+
 function mode_resize.uiupdate()
     maintainAspect = ui.checkbox('maintain aspect ratio', maintainAspect)
     if not maintainAspect then

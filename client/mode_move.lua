@@ -79,6 +79,10 @@ end
 -- UI
 --
 
+function mode_move.getIcon()
+    return 'move', 'Feather'
+end
+
 function mode_move.uiupdate()
     snapToGrid = ui.checkbox('snap to grid', snapToGrid)
         if snapToGrid then

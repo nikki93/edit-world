@@ -95,6 +95,10 @@ end
 -- UI
 --
 
+function mode_rotate.getIcon()
+    return 'rotate-right', 'FontAwesome'
+end
+
 function mode_rotate.uiupdate()
     snapToIncrement = ui.checkbox('snap to increment', snapToIncrement)
     if snapToIncrement then
